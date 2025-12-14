@@ -1,0 +1,16 @@
+/* Basic styling */
+#vapt-security-form label {
+    display: block;
+    margin-top: 1rem;
+}
+#vapt-security-form input,
+#vapt-security-form textarea {
+    width: 100%;
+    max-width: 400px;
+    padding: .5rem;
+    margin-top: .25rem;
+}
+#vapt-security-form button {
+    margin-top: 1rem;
+    padding: .5rem 1rem;
+}
