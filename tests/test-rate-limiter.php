@@ -3,8 +3,7 @@ use PHPUnit\Framework\TestCase;
 
 class RateLimiterTest extends TestCase {
 
-    public function setUp(): void {
-        // Reset stored option
+    protected function setUp(): void {
         delete_option( 'vapt_rate_limit' );
     }
 
@@ -22,11 +21,11 @@ class RateLimiterTest extends TestCase {
 
         // Simulate 12 requests (max 10 per minute)
         for ( $i = 0; $i < 12; $i++ ) {
-            $allow = $rl->allow_request();
+            $allowed = $rl->allow_request();
             if ( $i < 10 ) {
-                $this->assertTrue( $allow );
+                $this->assertTrue( $allowed );
             } else {
-                $this->assertFalse( $allow );
+                $this->assertFalse( $allowed );
             }
         }
     }

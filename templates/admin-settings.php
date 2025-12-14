@@ -1,6 +1,6 @@
 <?php
 /**
- * Settings page markup with jQuery UI tabs.
+ * Settings page markup that includes jQuery UI tabs.
  *
  * @package VAPT_Security
  */
@@ -16,24 +16,19 @@ if ( ! defined( 'ABSPATH' ) ) {
         <?php
         // Output security fields.
         settings_fields( 'vapt_security_options_group' );
-        // Print all settings sections (defined below).
-        do_settings_sections( 'vapt-security-settings' );
         ?>
 
         <!-- Tabs container -->
         <div id="vapt-security-tabs">
             <ul>
-                <li><a href="#tab-general">General</a></li>
-                <li><a href="#tab-rate-limiter">Rate Limiter</a></li>
-                <li><a href="#tab-validation">Input Validation</a></li>
-                <li><a href="#tab-cron">WP‑Cron Protection</a></li>
+                <li><a href="#tab-general"><?php esc_html_e( 'General', 'vapt-security' ); ?></a></li>
+                <li><a href="#tab-rate-limiter"><?php esc_html_e( 'Rate Limiter', 'vapt-security' ); ?></a></li>
+                <li><a href="#tab-validation"><?php esc_html_e( 'Input Validation', 'vapt-security' ); ?></a></li>
+                <li><a href="#tab-cron"><?php esc_html_e( 'WP‑Cron Protection', 'vapt-security' ); ?></a></li>
             </ul>
 
             <div id="tab-general">
-                <?php
-                // The fields that belong to this tab will be rendered here.
-                do_settings_sections( 'vapt_security_general' );
-                ?>
+                <?php do_settings_sections( 'vapt_security_general' ); ?>
             </div>
 
             <div id="tab-rate-limiter">

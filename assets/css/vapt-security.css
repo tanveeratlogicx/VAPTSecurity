@@ -1,4 +1,8 @@
-/* Basic styling */
+/* Basic styling for the settings page and form. */
+#vapt-security-tabs .ui-tabs-panel {
+    padding: 20px;
+}
+
 #vapt-security-form label {
     display: block;
     margin-top: 1rem;

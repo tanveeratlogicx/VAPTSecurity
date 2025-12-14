@@ -1,6 +1,6 @@
 <?php
 /**
- * Strict server‑side validation helper.
+ * Input validator.
  *
  * @package VAPT_Security
  */
@@ -12,30 +12,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 class VAPT_Input_Validator {
 
     /**
-     * Validate input data against a schema array.
+     * Validate a data array against a schema.
      *
-     * @param array $data   Raw POST data
-     * @param array $schema Array of fields => rules
+     * Schema example:
+     * [
+     *   'name' => [ 'required' => true, 'type' => 'string', 'max' => 50 ],
+     *   'email'=> [ 'required' => true, 'type' => 'email',  'max' => 100 ],
+     * ]
      *
-     * @return array|WP_Error  Sanitized data on success, WP_Error on failure
+     * @param array $data   Raw input.
+     * @param array $schema Validation rules.
+     *
+     * @return array|WP_Error Sanitized data or a WP_Error.
      */
     public function validate( array $data, array $schema ) {
         $sanitized = [];
+
         foreach ( $schema as $field => $rules ) {
             $value = $data[ $field ] ?? null;
 
-            // Required check
+            // Required?
             if ( $rules['required'] && ( ! isset( $value ) || $value === '' ) ) {
-                return new WP_Error( 'vapt_missing_field', sprintf( __( 'The field %s is required.', 'vapt-security' ), $field ) );
+                return new WP_Error(
+                    'vapt_missing_field',
+                    sprintf( __( 'The field %s is required.', 'vapt-security' ), $field )
+                );
             }
 
-            // Skip optional empty values
+            // Optional empty values are allowed
             if ( ! $rules['required'] && ( ! isset( $value ) || $value === '' ) ) {
                 $sanitized[ $field ] = null;
                 continue;
             }
 
-            // Type validation & sanitization
+            // Type‑specific sanitization
             switch ( $rules['type'] ) {
                 case 'email':
                     $sanitized[ $field ] = sanitize_email( $value );
@@ -55,11 +65,15 @@ class VAPT_Input_Validator {
                     break;
             }
 
-            // Max length check
+            // Max length
             if ( isset( $rules['max'] ) && mb_strlen( $sanitized[ $field ] ) > $rules['max'] ) {
-                return new WP_Error( 'vapt_field_too_long', sprintf( __( '%s is too long.', 'vapt-security' ), ucfirst( $field ) ) );
+                return new WP_Error(
+                    'vapt_field_too_long',
+                    sprintf( __( '%s is too long.', 'vapt-security' ), ucfirst( $field ) )
+                );
             }
         }
+
         return $sanitized;
     }
 }

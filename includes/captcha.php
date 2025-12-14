@@ -1,6 +1,7 @@
 <?php
 /**
- * Lightweight CAPTCHA placeholder.
+ * Very light‑weight CAPTCHA placeholder.
+ * Replace with reCAPTCHA, hCaptcha, or any custom solution.
  *
  * @package VAPT_Security
  */
@@ -11,25 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class VAPT_Captcha {
 
-    /**
-     * Singleton instance
-     *
-     * @var VAPT_Captcha
-     */
     private static $instance;
 
-    /**
-     * Private constructor
-     */
-    private function __construct() {
-        // Load any external API keys or options here
-    }
-
-    /**
-     * Return singleton
-     *
-     * @return VAPT_Captcha
-     */
     public static function instance(): VAPT_Captcha {
         if ( ! isset( self::$instance ) ) {
             self::$instance = new self();
@@ -37,15 +21,8 @@ class VAPT_Captcha {
         return self::$instance;
     }
 
-    /**
-     * Very simple CAPTCHA verification – replace with real API call.
-     *
-     * @param string $response
-     *
-     * @return bool
-     */
     public function verify( string $response ): bool {
-        // For demo purposes: accept "1234" as a valid captcha
+        // For demo: accept "1234" as the correct answer.
         return trim( $response ) === '1234';
     }
 }
