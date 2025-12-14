@@ -3,7 +3,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/your‑username/vapt-security
  * Description: A lightweight WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     1.0.0
+ * Version:     1.2.0
  * Author:      Tanveer Atlogicx
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
