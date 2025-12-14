@@ -4,7 +4,7 @@
  * Plugin URI:  https://github.com/your‑username/vapt-security
  * Description: A lightweight plugin that mitigates DoS via wp‑cron, enforces strict input validation,
  *              and implements rate limiting on form submissions. Compatible with WP 6.5+.
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      Tanveer Atlogicx
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -205,3 +205,121 @@ final class VAPT_Security {
 
 // Initialize the plugin
 VAPT_Security::instance();
+
+/**
+ * Enqueue admin assets for the settings page.
+ */
+public function enqueue_admin_assets( $hook ) {
+    // Only load on our plugin's settings page
+    if ( strpos( $hook, 'settings_page_vapt-security' ) === false ) {
+        return;
+    }
+
+    // jQuery UI Tabs is part of the core
+    wp_enqueue_script( 'jquery-ui-tabs' );
+    wp_enqueue_style( 'jquery-ui', includes_url( 'css/jquery-ui.css' ) );
+
+    // Custom CSS to hide/show tab panels
+    wp_add_inline_style(
+        'jquery-ui',
+        '#vapt-security-tabs .ui-tabs-panel { padding: 20px; }'
+    );
+}
+add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
+
+/**
+ * Hook into admin_menu to add the settings page.
+ */
+public function register_admin_menu() {
+    add_options_page(
+        __( 'VAPT Security', 'vapt-security' ),
+        __( 'VAPT Security', 'vapt-security' ),
+        'manage_options',
+        'vapt-security',
+        [ $this, 'render_settings_page' ]
+    );
+}
+add_action( 'admin_menu', [ $this, 'register_admin_menu' ] );
+
+/**
+ * Register settings, sections, and fields.
+ */
+public function register_settings() {
+    // The options group that will be used by settings_fields()
+    register_setting( 'vapt_security_options_group', 'vapt_security_options', [
+        'sanitize_callback' => [ $this, 'sanitize_options' ],
+    ] );
+
+    /* ------------------------------------------------------------------ */
+    /* General tab */
+    /* ------------------------------------------------------------------ */
+    add_settings_section(
+        'vapt_security_general',
+        __( 'General Settings', 'vapt-security' ),
+        null,
+        'vapt_security_general'
+    );
+
+    add_settings_field(
+        'enable_cron',
+        __( 'Enable WP‑Cron Scheduling', 'vapt-security' ),
+        [ $this, 'render_enable_cron_cb' ],
+        'vapt_security_general',
+        'vapt_security_general'
+    );
+
+    /* ------------------------------------------------------------------ */
+    /* Rate Limiter tab */
+    /* ------------------------------------------------------------------ */
+    add_settings_section(
+        'vapt_security_rate_limiter',
+        __( 'Rate Limiter', 'vapt-security' ),
+        null,
+        'vapt_security_rate_limiter'
+    );
+
+    add_settings_field(
+        'rate_limit_max',
+        __( 'Max Requests per Minute', 'vapt-security' ),
+        [ $this, 'render_rate_limit_max_cb' ],
+        'vapt_security_rate_limiter',
+        'vapt_security_rate_limiter'
+    );
+
+    /* ------------------------------------------------------------------ */
+    /* Input Validation tab */
+    /* ------------------------------------------------------------------ */
+    add_settings_section(
+        'vapt_security_validation',
+        __( 'Input Validation', 'vapt-security' ),
+        null,
+        'vapt_security_validation'
+    );
+
+    add_settings_field(
+        'validation_email',
+        __( 'Require Valid Email?', 'vapt-security' ),
+        [ $this, 'render_validation_email_cb' ],
+        'vapt_security_validation',
+        'vapt_security_validation'
+    );
+
+    /* ------------------------------------------------------------------ */
+    /* WP‑Cron Protection tab */
+    /* ------------------------------------------------------------------ */
+    add_settings_section(
+        'vapt_security_cron',
+        __( 'WP‑Cron Protection', 'vapt-security' ),
+        null,
+        'vapt_security_cron'
+    );
+
+    add_settings_field(
+        'cron_protection',
+        __( 'Enable Cron Rate Limiting', 'vapt-security' ),
+        [ $this, 'render_cron_protection_cb' ],
+        'vapt_security_cron',
+        'vapt_security_cron'
+    );
+}
+add_action( 'admin_init', [ $this, 'register_settings' ] );
