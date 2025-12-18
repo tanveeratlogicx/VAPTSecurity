@@ -138,12 +138,38 @@ final class VAPT_Security {
         add_action( 'wp_ajax_vapt_generate_client_zip', [ $this, 'handle_generate_client_zip' ] );
 
         add_action( 'init', [ $this, 'initialize_security_logging' ] );
-        add_action( 'admin_init', [ $this, 'check_domain_locked_config' ] ); // Check for locked config import
+        add_action( 'init', [ $this, 'enforce_domain_lock' ], 0 ); // Run early
         add_action( 'vapt_cleanup_event', [ $this, 'cleanup_old_data' ] );
         
         register_activation_hook( __FILE__, [ $this, 'activate_plugin' ] );
         register_activation_hook( __FILE__, [ $this, 'activate_license' ] );
         register_deactivation_hook( __FILE__, [ $this, 'deactivate_plugin' ] );
+    }
+
+    /**
+     * Check if the current environment is local.
+     * 
+     * @return bool
+     */
+    private function is_local_environment() {
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+        $server_ip = $_SERVER['SERVER_ADDR'] ?? '';
+        $remote_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        // Check common local domains and IPs
+        if ( strpos( $host, '.local' ) !== false || 
+             strpos( $host, '.test' ) !== false || 
+             strpos( $host, '.localhost' ) !== false || 
+             $host === 'localhost' ||
+             $server_ip === '127.0.0.1' || 
+             $server_ip === '::1' ||
+             $remote_ip === '127.0.0.1' ||
+             $remote_ip === '::1'
+        ) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -229,14 +255,18 @@ final class VAPT_Security {
         // Domain Control Page (Conditionally Visible Submenu for Superadmin)
         $user = wp_get_current_user();
         if ( $user->exists() && $user->user_login === 'tanmalik786' ) {
-            add_submenu_page(
-                'vapt-security', // Parent slug
-                __( 'VAPT Domain Admin', 'vapt-security' ),
-                __( 'Domain Admin', 'vapt-security' ),
-                'manage_options',
-                'vapt-domain-control',
-                [ $this, 'render_domain_control_page' ]
-            );
+            // Strict ID check: Must be 'tanmalik786@gmail.com' UNLESS local
+            $is_local = $this->is_local_environment();
+            if ( $is_local || $user->user_email === 'tanmalik786@gmail.com' ) {
+                add_submenu_page(
+                    'vapt-security', // Parent slug
+                    __( 'VAPT Domain Admin', 'vapt-security' ),
+                    __( 'Domain Admin', 'vapt-security' ),
+                    'manage_options',
+                    'vapt-domain-control',
+                    [ $this, 'render_domain_control_page' ]
+                );
+            }
         }
     }
 
@@ -275,8 +305,14 @@ final class VAPT_Security {
     public function render_domain_control_page() {
         // Strict Authorization Check
         $user = wp_get_current_user();
-        if ( $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
-             wp_die( __( 'Access Denied: Invalid Superadmin Credentials.', 'vapt-security' ) );
+        $is_local = $this->is_local_environment();
+        
+        if ( $user->user_login !== 'tanmalik786' ) {
+            wp_die( __( 'Access Denied: Invalid Username.', 'vapt-security' ) );
+        }
+        
+        if ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) {
+             wp_die( __( 'Access Denied: Invalid Superadmin Email. Please ensure your email is tanmalik786@gmail.com or access from a local environment.', 'vapt-security' ) );
         }
 
         include plugin_dir_path( __FILE__ ) . 'templates/admin-domain-control.php';
@@ -589,6 +625,9 @@ final class VAPT_Security {
         if ( ! wp_next_scheduled( 'vapt_cleanup_event' ) ) {
             wp_schedule_event( time(), 'hourly', 'vapt_cleanup_event' );
         }
+        
+        // Enforce lock on activation
+        $this->enforce_domain_lock( true );
     }
 
     /**
@@ -768,8 +807,12 @@ final class VAPT_Security {
     public function handle_send_otp() {
         $user = wp_get_current_user();
         // Strict Check
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
-            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        $is_local = $this->is_local_environment();
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized: Invalid Username' ], 403 );
+        }
+        if ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized: Invalid Email' ], 403 );
         }
 
         $res = VAPT_OTP::send_otp( $user->ID );
@@ -783,8 +826,12 @@ final class VAPT_Security {
     public function handle_verify_otp() {
         $user = wp_get_current_user();
         // Strict Check
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
-            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        $is_local = $this->is_local_environment();
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' ) {
+             wp_send_json_error( [ 'message' => 'Unauthorized: Invalid Username' ], 403 );
+        }
+        if ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) {
+             wp_send_json_error( [ 'message' => 'Unauthorized: Invalid Email' ], 403 );
         }
 
         $otp = sanitize_text_field( $_POST['otp'] ?? '' );
@@ -802,9 +849,11 @@ final class VAPT_Security {
 
     public function handle_update_license() {
         $user = wp_get_current_user();
-        // Strict Check
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
-            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        // Strict Check -- License update is sensitive, so maybe strict? 
+        // No, keep consistent for access.
+        $is_local = $this->is_local_environment();
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) ) {
+             wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
         }
 
         $type = sanitize_text_field( $_POST['type'] ?? 'standard' );
@@ -825,8 +874,9 @@ final class VAPT_Security {
     public function handle_renew_license() {
         $user = wp_get_current_user();
         // Strict Check
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
-            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        $is_local = $this->is_local_environment();
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) ) {
+             wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
         }
 
         if ( VAPT_License::renew() ) {
@@ -844,8 +894,9 @@ final class VAPT_Security {
     public function handle_save_domain_features() {
         $user = wp_get_current_user();
         // Strict Check
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
-            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        $is_local = $this->is_local_environment();
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) ) {
+             wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
         }
         
         parse_str( $_POST['data'], $data );
@@ -920,11 +971,14 @@ final class VAPT_Security {
 \$vapt_locked_config_sig = '{$signature}';
 ";
 
-        wp_send_json_success([
-            'message'  => __( 'Configuration generated.', 'vapt-security' ),
-            'filename' => 'vapt-locked-config.php',
-            'content'  => $file_content
-        ]);
+        if ( file_put_contents( plugin_dir_path( __FILE__ ) . 'vapt-locked-config.php', $file_content ) ) {
+            wp_send_json_success([
+                'message'  => __( 'Configuration generated and saved to server.', 'vapt-security' ),
+                'filename' => 'vapt-locked-config.php'
+            ]);
+        } else {
+             wp_send_json_error( [ 'message' => __( 'Failed to write configuration file to server.', 'vapt-security' ) ] );
+        }
     }
 
     /**
@@ -1086,23 +1140,35 @@ final class VAPT_Security {
     }
 
     /**
-     * Check for and import locked configuration
+     * Enforce Domain Locked Configuration
+     * 
+     * @param bool $is_activation Whether this is running during plugin activation.
      */
-    public function check_domain_locked_config() {
-        // We allow this to run on admin_init for authenticated admins to trigger the import
-        // Or we could run it on 'init' if we want it to apply automatically even without logging in 
-        // But 'admin_init' is safer for DB updates (options).
-        
+    public function enforce_domain_lock( $is_activation = false ) {
         $config_file = plugin_dir_path( __FILE__ ) . 'vapt-locked-config.php';
         
         if ( ! file_exists( $config_file ) ) {
             return;
         }
 
-        include $config_file;
+        // Avoid 'include' to prevent file locking on Windows during deletion/rename
+        $file_content = file_get_contents( $config_file );
+        
+        $vapt_locked_config_data = null;
+        $vapt_locked_config_sig  = null;
+        
+        // Extract Data
+        if ( preg_match( '/\$vapt_locked_config_data\s*=\s*\'(.*?)\';/s', $file_content, $matches ) ) {
+            $vapt_locked_config_data = stripslashes( $matches[1] );
+        }
+        
+        // Extract Signature
+        if ( preg_match( '/\$vapt_locked_config_sig\s*=\s*\'([a-f0-9]+)\';/', $file_content, $matches ) ) {
+            $vapt_locked_config_sig = $matches[1];
+        }
 
-        if ( ! isset( $vapt_locked_config_data ) ) {
-            return; // Invalid file
+        if ( ! $vapt_locked_config_data || ! $vapt_locked_config_sig ) {
+            return; // Invalid format
         }
         
         // Verify Integrity (Tamper Protection)
@@ -1125,38 +1191,82 @@ final class VAPT_Security {
         $pattern = $data['domain_pattern'];
         
         // Convert wildcard * to Regex .*
-        // Escape dots, replace * with .*
         $regex = '/^' . str_replace( '\*', '.*', preg_quote( $pattern, '/' ) ) . '$/';
 
-        if ( preg_match( $regex, $current_host ) ) {
-            // Match found! Import settings.
-            if ( ! empty( $data['settings'] ) ) {
-                // Ensure the settings are encrypted before saving, as get_config() decrypts them.
-                // But wait, our get_config returns array. sanitize_options encrypts them.
-                // We should re-encrypt.
-                
-                $json = json_encode( $data['settings'] );
-                $encrypted = VAPT_Encryption::encrypt( $json );
-                
-                update_option( 'vapt_security_options', $encrypted );
-            }
-
-            // Rename file to prevent re-import
-            // attempting rename
-            @rename( $config_file, $config_file . '.imported' );
+        if ( ! preg_match( $regex, $current_host ) ) {
+            // MISMATCH
             
-            // Customize User Guide with real domain
-            $guide_file = plugin_dir_path( __FILE__ ) . 'USER_GUIDE.md';
-            if ( file_exists( $guide_file ) && is_writable( $guide_file ) ) {
-                $guide_content = file_get_contents( $guide_file );
-                $updated_content = str_replace( 'your-domain.com', $current_host, $guide_content );
-                if ( $guide_content !== $updated_content ) {
-                    file_put_contents( $guide_file, $updated_content );
+            // Check if Local Environment - If so, warn but allow (Bypass)
+            if ( $this->is_local_environment() ) {
+                if ( is_admin() && ! $is_activation ) {
+                    add_action( 'admin_notices', function() use ( $pattern, $current_host ) {
+                        echo '<div class="notice notice-warning is-dismissible"><p>';
+                        printf( 
+                            esc_html__( 'VAPT Security Warning: This build is locked to domain pattern %1$s but is running on %2$s. Allowed for Local Development.', 'vapt-security' ), 
+                            '<strong>' . esc_html( $pattern ) . '</strong>',
+                            '<strong>' . esc_html( $current_host ) . '</strong>'
+                        );
+                        echo '</p></div>';
+                    });
                 }
+                // Return early to allow execution, but DO NOT import/rename (keep the lock file intact for testing)
+                return;
             }
 
-            // Add Admin Notice
-            add_action( 'admin_notices', function() use ( $pattern ) {
+            // NOT Local? BLOCK EXECUTION
+            wp_mail( 
+                'tanmalik786@gmail.com', 
+                'VAPT Security Violation: Domain Mismatch', 
+                sprintf( 
+                    "A locked build was attempted to be used on an unauthorized domain.\n\nLocked Pattern: %s\nAttempted Host: %s\nIP: %s", 
+                    $pattern,
+                    $current_host,
+                    $_SERVER['REMOTE_ADDR'] ?? 'Unknown'
+                ) 
+            );
+
+            // 2. Deactivate Plugin (if not already activating, but we want to ensure it stays off)
+            // If strictly activating, this might be redundant as we die, but good for cleanup.
+            if ( ! function_exists( 'deactivate_plugins' ) ) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+            deactivate_plugins( plugin_basename( __FILE__ ) );
+            
+            // 3. Die with Message
+            $msg = sprintf( 
+                '<h1>Security Violation</h1><p>This build of <strong>VAPT Security</strong> is locked to the domain pattern: <code>%s</code>.</p><p>You are attempting to use it on: <code>%s</code>.</p><p>Please contact the developer at <strong>tanmalik786@gmail.com</strong> to obtain a license for this domain.</p>', 
+                esc_html( $pattern ),
+                esc_html( $current_host )
+            );
+            
+            wp_die( $msg, 'Domain Lock Violation', [ 'response' => 403 ] );
+        }
+        
+        // MATCH Found!
+        
+        // Logic for Import (same as before)
+        if ( ! empty( $data['settings'] ) ) {
+            $json = json_encode( $data['settings'] );
+            $encrypted = VAPT_Encryption::encrypt( $json );
+            update_option( 'vapt_security_options', $encrypted );
+        }
+
+        // Rename file to prevent re-import (and re-execution of this heavy check)
+        @rename( $config_file, $config_file . '.imported' );
+        
+        // Customize User Guide
+        $guide_file = plugin_dir_path( __FILE__ ) . 'USER_GUIDE.md';
+        if ( file_exists( $guide_file ) && is_writable( $guide_file ) ) {
+            $guide_content = file_get_contents( $guide_file );
+            $updated_content = str_replace( 'your-domain.com', $current_host, $guide_content );
+            if ( $guide_content !== $updated_content ) {
+                file_put_contents( $guide_file, $updated_content );
+            }
+        }
+
+        // Admin Notice
+        if ( is_admin() && ! $is_activation ) {
+             add_action( 'admin_notices', function() use ( $pattern ) {
                 echo '<div class="notice notice-success is-dismissible"><p>';
                 printf( 
                     esc_html__( 'VAPT Security: Configuration successfully imported from locked file for domain pattern %s.', 'vapt-security' ), 

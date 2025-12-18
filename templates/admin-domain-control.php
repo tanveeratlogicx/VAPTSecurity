@@ -36,7 +36,8 @@ $all_features = VAPT_Features::get_defined_features();
                     <?php esc_html_e( 'Verify', 'vapt-security' ); ?>
                 </button>
                 <div style="margin-top: 10px; text-align: center;">
-                    <a href="#" id="vapt-resend-otp"><?php esc_html_e( 'Resend OTP', 'vapt-security' ); ?></a>
+                    <span id="vapt-otp-timer-container"><?php esc_html_e( 'Resend in', 'vapt-security' ); ?> <span id="vapt-otp-timer">60</span>s</span>
+                    <a href="#" id="vapt-resend-otp" style="display:none;"><?php esc_html_e( 'Resend OTP', 'vapt-security' ); ?></a>
                 </div>
             </div>
             <div id="vapt-otp-message" style="margin-top: 15px;"></div>
@@ -185,7 +186,7 @@ $all_features = VAPT_Features::get_defined_features();
                 <tr>
                     <th></th>
                     <td>
-                        <button type="button" id="vapt-generate-locked-config" class="button button-primary"><?php esc_html_e( 'Generate & Download Config', 'vapt-security' ); ?></button>
+                        <button type="button" id="vapt-generate-locked-config" class="button button-primary"><?php esc_html_e( 'Generate Config', 'vapt-security' ); ?></button>
                         <button type="button" id="vapt-generate-client-zip" class="button button-secondary" style="margin-left: 10px;">
                             <?php esc_html_e( 'Download Client Zip', 'vapt-security' ); ?>
                         </button>
@@ -202,14 +203,42 @@ $all_features = VAPT_Features::get_defined_features();
 
 <script>
 jQuery(document).ready(function($) {
+    let timerInterval;
+
+    function startOtpTimer() {
+        let timeLeft = 60;
+        $('#vapt-otp-timer').text(timeLeft);
+        $('#vapt-otp-timer-container').show();
+        $('#vapt-resend-otp').hide();
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(function() {
+            timeLeft--;
+            $('#vapt-otp-timer').text(timeLeft);
+            if(timeLeft <= 0) {
+                clearInterval(timerInterval);
+                $('#vapt-otp-timer-container').hide();
+                $('#vapt-resend-otp').show();
+            }
+        }, 1000);
+    }
+
     // OTP Logic (Same endpoints, generic)
     $('#vapt-send-otp, #vapt-resend-otp').click(function(e){
         e.preventDefault();
+        
+        // Disable buttons temporarily
+        $(this).prop('disabled', true);
+        
         $.post(ajaxurl, {action:'vapt_send_otp'}, function(r){
+             // Re-enable (for send btn)
+            $('#vapt-send-otp').prop('disabled', false);
+
             if(r.success) {
                 $('#vapt-otp-step-1').hide();
                 $('#vapt-otp-step-2').show();
                 $('#vapt-otp-message').html('<span style="color:green">'+r.data.message+'</span>');
+                startOtpTimer();
             } else {
                 $('#vapt-otp-message').html('<span style="color:red">'+r.data.message+'</span>');
             }
@@ -263,15 +292,9 @@ jQuery(document).ready(function($) {
             include_settings: $('#vapt-lock-include-settings').is(':checked') ? 1 : 0,
             nonce: '<?php echo wp_create_nonce( "vapt_locked_config" ); ?>' // We should ideally pass this via wp_localize_script
         }, function(r){
-            btn.prop('disabled', false).text('<?php esc_html_e( 'Generate & Download Config', 'vapt-security' ); ?>');
+            btn.prop('disabled', false).text('<?php esc_html_e( 'Generate Config', 'vapt-security' ); ?>');
             if(r.success) {
-                $('#vapt-generate-msg').html('<span style="color:green"><?php esc_html_e( 'Configuration generated!', 'vapt-security' ); ?></span>');
-                // Trigger download
-                var blob = new Blob([r.data.content], {type: "application/x-php"});
-                var link = document.createElement('a');
-                link.href = window.URL.createObjectURL(blob);
-                link.download = r.data.filename;
-                link.click();
+                $('#vapt-generate-msg').html('<span style="color:green">'+r.data.message+'</span>');
             } else {
                 $('#vapt-generate-msg').html('<span style="color:red">'+r.data.message+'</span>');
             }
@@ -294,15 +317,6 @@ jQuery(document).ready(function($) {
             if(r.success) {
                 $('#vapt-generate-msg').html('<span style="color:green"><?php esc_html_e( 'Zip generated!', 'vapt-security' ); ?></span>');
                 // Download
-                var blob = new Blob([r.data.content], {type: "application/zip"}); // Wait, receiving binary via JSON is bad. 
-                // Better approach for ZIP: usage of window.location with query params or a hidden form? 
-                // BUT, since we have strict Superadmin checks and Nonces, a simple GET link might be tricky if we want to include POST data (settings).
-                // Existing pattern uses Blob. We can return base64 encoded zip in JSON? PHP json_encode might choke on big files.
-                // Better: The AJAX generates a temp file and returns a URL to download it? 
-                // OR: We submit a form to a POST endpoint that streams the download directly?
-                
-                // Let's try the blob approach with base64 for now, assuming the plugin isn't massive (it's small).
-                // Decode base64 to byte array
                 var byteCharacters = atob(r.data.base64);
                 var byteNumbers = new Array(byteCharacters.length);
                 for (var i = 0; i < byteCharacters.length; i++) {
