@@ -3,7 +3,7 @@ Contributors: securityqoder
 Tags: security, vapt, dos protection, input validation, rate limiting
 Requires at least: 5.0
 Tested up to: 6.4
-Stable tag: 1.0.2
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,13 @@ The plugin supports a configuration file (`vapt-config.php`) that allows you to:
 - Customize user-facing messages
 - Enable debug mode for troubleshooting
 
+### Testing Tools
+
+The plugin includes comprehensive testing tools:
+- Detailed FEATURES.md documentation with testing instructions
+- Sample test script (`test-vapt-features.php`) for easy feature testing
+- Configuration file samples for different environments
+
 ### Why Choose VAPT Security?
 
 - **Comprehensive Protection**: Addresses multiple VAPT issues in one plugin
@@ -66,6 +73,7 @@ The plugin supports a configuration file (`vapt-config.php`) that allows you to:
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Navigate to Settings → VAPT Security to configure options
 4. (Optional) Create a `vapt-config.php` file in your WordPress root directory for advanced configuration
+5. (Development) Use `test-vapt-features.php` to test plugin functionality
 
 == Frequently Asked Questions ==
 
@@ -88,7 +96,7 @@ Security logs and rate limiting data are automatically cleaned up:
 
 = How do I test the security features? =
 
-Detailed testing instructions are available in the FEATURES.md file included with the plugin. You can also refer to the Test URL information shown in the plugin settings.
+Detailed testing instructions are available in the FEATURES.md file included with the plugin. You can also use the test-vapt-features.php script for easy testing, or refer to the Test URL information shown in the plugin settings.
 
 = Can I customize the plugin behavior? =
 
@@ -103,6 +111,14 @@ Yes, you can create a `vapt-config.php` file in your WordPress root directory to
 5. Security logging and statistics dashboard
 
 == Changelog ==
+
+= 1.0.3 =
+* Added configuration file support with vapt-config-sample.php
+* Created comprehensive FEATURES.md documentation
+* Added test-vapt-features.php testing script
+* Enhanced plugin with feature enable/disable controls
+* Added IP whitelisting and customizable messages
+* Improved admin interface with feature descriptions
 
 = 1.0.2 =
 * Improved admin interface with modern horizontal tabs
@@ -125,6 +141,9 @@ Yes, you can create a `vapt-config.php` file in your WordPress root directory to
 * Comprehensive admin interface
 
 == Upgrade Notice ==
+
+= 1.0.3 =
+Added comprehensive configuration file support, documentation, and testing tools
 
 = 1.0.2 =
 Added configuration file support and improved admin interface

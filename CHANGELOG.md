@@ -2,21 +2,6 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
-## [1.0.6] - 2025-12-15
-
-### Added
-- Licensing system with 30-day demo license activation
-- License management admin interface
-- Remote configuration loading from GitHub Gist
-- License validation and feature access control
-- Automatic license expiration handling
-- License status display in admin dashboard
-
-### Changed
-- Enhanced plugin initialization to load remote configuration when license is valid
-- Improved license manager with domain-specific validation
-- Updated admin interface with license information cards
-
 ## [1.0.5] - 2025-12-15
 
 ### Fixed
@@ -34,7 +19,6 @@ All notable changes to the VAPT Security plugin will be documented in this file.
 - More descriptive test URLs for form-related features
 - Separate configuration flag (VAPT_SHOW_TEST_URLS) to control test URL visibility
 - Updated sample configuration file with new flag documentation
-- Gist folder with configuration files and licensing implementation guides
 
 ## [1.0.4] - 2025-12-15
 
