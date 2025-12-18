@@ -5,6 +5,7 @@
 *.swo
 *~
 .DS_Store
+.zip
 
 # Dependency directories
 node_modules/
