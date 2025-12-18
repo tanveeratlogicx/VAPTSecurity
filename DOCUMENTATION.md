@@ -1,8 +1,8 @@
-# VAPT Security Qoder Plugin Documentation
+# VAPT Security Plugin Documentation
 
 ## Overview
 
-VAPT Security Qoder is a comprehensive WordPress security plugin designed to address critical VAPT (Vulnerability Assessment and Penetration Testing) issues. The plugin provides multi-layered protection against common security threats including DoS attacks via wp-cron, lack of input validation, and inadequate rate limiting on form submissions.
+VAPT Security is a comprehensive WordPress security plugin designed to address critical VAPT (Vulnerability Assessment and Penetration Testing) issues. The plugin provides multi-layered protection against common security threats including DoS attacks via wp-cron, lack of input validation, and inadequate rate limiting on form submissions.
 
 ## Features
 
@@ -53,9 +53,9 @@ Comprehensive event tracking and analysis:
 ### Installation Steps
 
 1. Download the plugin files
-2. Upload the `vaptsecurity-qoder` folder to `/wp-content/plugins/`
+2. Upload the `vapt-security` folder to `/wp-content/plugins/`
 3. Activate the plugin through the WordPress admin panel
-4. Configure settings via Settings → VAPT Security Qoder
+4. Configure settings via Settings → VAPT Security
 
 ## Configuration
 
@@ -157,7 +157,7 @@ All plugin data is stored efficiently in the WordPress options table:
 ### Main Plugin Class
 
 ```php
-VAPT_Security_Qoder::instance()
+VAPT_Security::instance()
 ```
 
 Returns the singleton instance of the main plugin class.

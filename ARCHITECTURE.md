@@ -1,8 +1,8 @@
-# VAPT Security Qoder Plugin Architecture
+# VAPT Security Plugin Architecture
 
 ## Overview
 
-The VAPT Security Qoder plugin implements a multi-layered security approach to protect WordPress sites from common vulnerabilities:
+The VAPT Security plugin implements a multi-layered security approach to protect WordPress sites from common vulnerabilities:
 
 ```mermaid
 graph TD

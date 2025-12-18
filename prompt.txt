@@ -18,7 +18,7 @@ Do incremet the Version info on each change.
 
 
 Step 2
-The source files are hosted on a Github repository e.g. https://github.com/tanveeratlogicx/vaptsecurity-qoder
+The source files are hosted on a Github repository e.g. https://github.com/tanveeratlogicx/vapt-security
 The plugin should be named as "VAPT Security".
 
 I would like to use a configuration file, hosted on a Github Gist, to push certain features to the application once its domain gets verified. If the Verification fails, the application should work only the basic feature like `Form Input Validation and Sanitation` - Implement an Authentication for each domain?

@@ -1,8 +1,8 @@
 <?php
 /**
- * Uninstall VAPT Security Qoder
+ * Uninstall VAPT Security
  *
- * @package VAPT_Security_Qoder
+ * @package VAPT_Security
  */
 
 // If uninstall is not called from WordPress, exit

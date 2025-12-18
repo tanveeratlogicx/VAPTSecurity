@@ -1,6 +1,6 @@
 {
-  "name": "vapt-security"
-  "version": "1.0.3"
+  "name": "vapt-security",
+  "version": "2.0.0",
   "description": "A comprehensive WordPress security plugin that protects against common VAPT issues including DoS attacks via wp-cron, lack of input validation, and rate limiting on form submissions.",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/vapt-security.git"
+    "url": "git+https://github.com/tanveeratlogicx/vapt-security.git"
   },
   "keywords": [
     "wordpress",
@@ -18,10 +18,10 @@
     "input-validation",
     "rate-limiting"
   ],
-  "author": "Security Qoder",
+  "author": "Tanveer Malik",
   "license": "GPL-2.0-or-later",
   "bugs": {
-    "url": "https://github.com/your-username/vapt-security/issues"
+    "url": "https://github.com/tanveeratlogicx/vapt-security/issues"
   },
-  "homepage": "https://github.com/your-username/vapt-security#readme"
+  "homepage": "https://github.com/tanveeratlogicx/vapt-security#readme"
 }

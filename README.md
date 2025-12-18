@@ -1,2 +1,2 @@
-# vaptsecurity-qoder
-This is a WordPress Plugin created using Qoder AI IDE, for Gargash Group.
+# VAPT Security
+This is a WordPress Plugin created for Gargash Group.

@@ -1,9 +1,9 @@
 === VAPT Security ===
-Contributors: securityqoder
+Contributors: tanveeratlogicx
 Tags: security, vapt, dos protection, input validation, rate limiting
 Requires at least: 5.0
 Tested up to: 6.4
-Stable tag: 1.0.4
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,6 +43,11 @@ VAPT Security is a robust security plugin designed to address critical VAPT (Vul
    - Minimal performance impact on normal operations
    - Scheduled maintenance tasks
 
+6. **Domain Control Features**
+   - Hidden Domain Control Page for Superadmin
+   - OTP Authentication integration
+   - License management
+
 ### Configuration File Support
 
 The plugin supports a configuration file (`vapt-config.php`) that allows you to:
@@ -69,7 +74,7 @@ The plugin includes comprehensive testing tools:
 
 == Installation ==
 
-1. Upload the `vaptsecurity-qoder` folder to the `/wp-content/plugins/` directory
+1. Upload the `vapt-security` folder to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Navigate to Settings → VAPT Security to configure options
 4. (Optional) Create a `vapt-config.php` file in your WordPress root directory for advanced configuration
@@ -111,6 +116,13 @@ Yes, you can create a `vapt-config.php` file in your WordPress root directory to
 5. Security logging and statistics dashboard
 
 == Changelog ==
+
+= 2.0.0 =
+* Major release with Domain Control features
+* Added OTP authentication for superadmin
+* Removed legacy "Qoder" references
+* UI enhancements and bug fixes
+* Updated repository URLs
 
 = 1.0.3 =
 * Added configuration file support with vapt-config-sample.php

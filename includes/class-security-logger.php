@@ -2,7 +2,7 @@
 /**
  * Security Logger.
  *
- * @package VAPT_Security_Qoder
+ * @package VAPT_Security
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

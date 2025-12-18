@@ -2,7 +2,7 @@
 /**
  * Input validator.
  *
- * @package VAPT_Security_Qoder
+ * @package VAPT_Security
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -35,7 +35,7 @@ class VAPT_Input_Validator {
             if ( $rules['required'] && ( ! isset( $value ) || $value === '' ) ) {
                 return new WP_Error(
                     'vapt_missing_field',
-                    sprintf( __( 'The field %s is required.', 'vapt-security-qoder' ), $field )
+                    sprintf( __( 'The field %s is required.', 'vapt-security' ), $field )
                 );
             }
 
@@ -54,7 +54,7 @@ class VAPT_Input_Validator {
                 case 'email':
                     $sanitized[ $field ] = sanitize_email( $value );
                     if ( ! is_email( $sanitized[ $field ] ) ) {
-                        return new WP_Error( 'vapt_invalid_email', __( 'Invalid email address.', 'vapt-security-qoder' ) );
+                        return new WP_Error( 'vapt_invalid_email', __( 'Invalid email address.', 'vapt-security' ) );
                     }
                     break;
                 case 'int':
@@ -64,7 +64,7 @@ class VAPT_Input_Validator {
                     $sanitized[ $field ] = esc_url_raw( $value );
                     // Additional URL validation
                     if ( $level === 'strict' && ! filter_var( $sanitized[ $field ], FILTER_VALIDATE_URL ) ) {
-                        return new WP_Error( 'vapt_invalid_url', __( 'Invalid URL format.', 'vapt-security-qoder' ) );
+                        return new WP_Error( 'vapt_invalid_url', __( 'Invalid URL format.', 'vapt-security' ) );
                     }
                     break;
                 case 'string':
@@ -95,7 +95,7 @@ class VAPT_Input_Validator {
             if ( isset( $rules['max'] ) && mb_strlen( $sanitized[ $field ] ) > $rules['max'] ) {
                 return new WP_Error(
                     'vapt_field_too_long',
-                    sprintf( __( '%s is too long.', 'vapt-security-qoder' ), ucfirst( $field ) )
+                    sprintf( __( '%s is too long.', 'vapt-security' ), ucfirst( $field ) )
                 );
             }
 
@@ -103,7 +103,7 @@ class VAPT_Input_Validator {
             if ( isset( $rules['min'] ) && mb_strlen( $sanitized[ $field ] ) < $rules['min'] ) {
                 return new WP_Error(
                     'vapt_field_too_short',
-                    sprintf( __( '%s is too short.', 'vapt-security-qoder' ), ucfirst( $field ) )
+                    sprintf( __( '%s is too short.', 'vapt-security' ), ucfirst( $field ) )
                 );
             }
 
@@ -111,7 +111,7 @@ class VAPT_Input_Validator {
             if ( isset( $rules['pattern'] ) && ! preg_match( $rules['pattern'], $sanitized[ $field ] ) ) {
                 return new WP_Error(
                     'vapt_invalid_pattern',
-                    sprintf( __( '%s format is invalid.', 'vapt-security-qoder' ), ucfirst( $field ) )
+                    sprintf( __( '%s format is invalid.', 'vapt-security' ), ucfirst( $field ) )
                 );
             }
         }

@@ -1,21 +1,28 @@
 {
-    "name": "vapt-security/vapt-security"
+    "name": "vapt-security/vapt-security",
     "description": "A comprehensive WordPress security plugin that protects against common VAPT issues including DoS attacks via wp-cron, lack of input validation, and rate limiting on form submissions.",
     "type": "wordpress-plugin",
-    "keywords": ["wordpress", "security", "vapt", "dos-protection", "input-validation", "rate-limiting"],
-    "homepage": "https://github.com/your-username/vapt-security"
+    "keywords": [
+        "wordpress",
+        "security",
+        "vapt",
+        "dos-protection",
+        "input-validation",
+        "rate-limiting"
+    ],
+    "homepage": "https://github.com/tanveeratlogicx/VAPTSecurity",
     "license": "GPL-2.0-or-later",
     "authors": [
         {
-            "name": "Security Qoder",
+            "name": "VAPTSecurity Team",
             "email": "security@example.com",
-            "homepage": "https://github.com/your-username",
+            "homepage": "https://github.com/tanveeratlogicx",
             "role": "Developer"
         }
     ],
     "support": {
-        "issues": "https://github.com/your-username/vapt-security/issues"
-        "source": "https://github.com/your-username/vapt-security"
+        "issues": "https://github.com/tanveeratlogicx/VAPTSecurity/issues",
+        "source": "https://github.com/tanveeratlogicx/VAPTSecurity"
     },
     "require": {
         "php": ">=7.2.24"
@@ -24,7 +31,9 @@
         "ext-mbstring": "For better multibyte string handling"
     },
     "autoload": {
-        "classmap": ["includes/"]
+        "classmap": [
+            "includes/"
+        ]
     },
     "config": {
         "platform": {

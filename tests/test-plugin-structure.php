@@ -2,12 +2,12 @@
 /**
  * Plugin structure tests
  *
- * @package VAPT_Security_Qoder
+ * @package VAPT_Security
  */
 
 // Test that all required files exist
 $required_files = [
-    'vapt-security-qoder.php',
+    'vapt-security.php',
     'includes/class-rate-limiter.php',
     'includes/class-input-validator.php',
     'includes/class-security-logger.php',

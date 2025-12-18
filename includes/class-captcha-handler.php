@@ -2,7 +2,7 @@
 /**
  * CAPTCHA Handler.
  *
- * @package VAPT_Security_Qoder
+ * @package VAPT_Security
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -36,7 +36,7 @@ class VAPT_Captcha_Handler {
         ob_start();
         ?>
         <div class="vapt-captcha">
-            <label for="vapt-captcha-response"><?php printf( __( 'What is %d + %d?', 'vapt-security-qoder' ), $num1, $num2 ); ?></label>
+            <label for="vapt-captcha-response"><?php printf( __( 'What is %d + %d?', 'vapt-security' ), $num1, $num2 ); ?></label>
             <input type="text" name="captcha" id="vapt-captcha-response" required />
             <input type="hidden" name="captcha_answer" value="<?php echo esc_attr( $num1 + $num2 ); ?>" />
         </div>

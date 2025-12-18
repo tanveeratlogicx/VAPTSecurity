@@ -2,6 +2,18 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [2.0.0] - 2025-12-18
+
+### Added
+- Domain Control features for superadmin
+- OTP Authentication integration
+- License management system
+
+### Changed
+- Removed legacy "Qoder" references
+- Updated repository URLs to tanveeratlogicx/VAPTSecurity
+- **Major Release**: Plugin version updated to 2.0.0
+
 ## [1.0.5] - 2025-12-15
 
 ### Fixed
@@ -64,7 +76,7 @@ All notable changes to the VAPT Security plugin will be documented in this file.
 ## [1.0.1] - 2025-12-15
 
 ### Changed
-- Renamed main plugin file from `vapt-security-qoder.php` to `vapt-security.php`
+- Renamed main plugin file to `vapt-security.php`
 - Updated plugin URI to reflect correct repository name
 - Removed duplicate plugin folder
 - Cleaned up file structure to maintain single source of truth
