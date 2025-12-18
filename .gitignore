@@ -3,9 +3,9 @@
 .idea/
 *.swp
 *.swo
+*.zip
 *~
 .DS_Store
-.zip
 
 # Dependency directories
 node_modules/

@@ -3,7 +3,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     1.0.5
+ * Version:     2.0.0
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -121,10 +121,23 @@ final class VAPT_Security {
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
         add_action( 'wp_ajax_nopriv_vapt_form_submit', [ $this, 'handle_form_submission' ] );
         add_action( 'wp_ajax_vapt_form_submit', [ $this, 'handle_form_submission' ] );
+        
+        // OTP AJAX
+        add_action( 'wp_ajax_vapt_send_otp', [ $this, 'handle_send_otp' ] );
+        add_action( 'wp_ajax_vapt_verify_otp', [ $this, 'handle_verify_otp' ] );
+
+        // License AJAX
+        add_action( 'wp_ajax_vapt_update_license', [ $this, 'handle_update_license' ] );
+        add_action( 'wp_ajax_vapt_renew_license', [ $this, 'handle_renew_license' ] );
+        
+        // Domain Features AJAX
+        add_action( 'wp_ajax_vapt_save_domain_features', [ $this, 'handle_save_domain_features' ] );
+
         add_action( 'init', [ $this, 'initialize_security_logging' ] );
         add_action( 'vapt_cleanup_event', [ $this, 'cleanup_old_data' ] );
         
         register_activation_hook( __FILE__, [ $this, 'activate_plugin' ] );
+        register_activation_hook( __FILE__, [ $this, 'activate_license' ] );
         register_deactivation_hook( __FILE__, [ $this, 'deactivate_plugin' ] );
     }
 
@@ -165,10 +178,32 @@ final class VAPT_Security {
         }
 
         // Disable default WP-Cron if option is enabled
-        $opts = get_option( 'vapt_security_options', [] );
+        $opts = $this->get_config();
         if ( isset( $opts['enable_cron'] ) && $opts['enable_cron'] ) {
             define( 'DISABLE_WP_CRON', true );
         }
+    }
+
+    /**
+     * Get decrypted configuration.
+     * 
+     * @return array
+     */
+    public function get_config() {
+        $raw = get_option( 'vapt_security_options', [] );
+        
+        // If it's an array, it's not encrypted yet (legacy or fresh install before save)
+        if ( is_array( $raw ) ) {
+            return $raw;
+        }
+        
+        // It's a string, so decrypt it
+        $json = VAPT_Encryption::decrypt( $raw );
+        if ( $json ) {
+            return json_decode( $json, true ) ?: [];
+        }
+        
+        return [];
     }
 
     /**
@@ -183,7 +218,18 @@ final class VAPT_Security {
             'vapt-security',
             [ $this, 'render_settings_page' ],
             'dashicons-shield',
-            65 // Position above Appearance (60) but below Plugins (65)
+            65 
+        );
+
+        // Domain Control Page (Hidden, Superadmin Only)
+        // We register it for 'manage_options' so it exists, but we gate access in the render callback.
+        add_submenu_page(
+            null, // NULL parent makes it hidden from menu
+            __( 'VAPT Domain Control', 'vapt-security' ),
+            __( 'Domain Control', 'vapt-security' ),
+            'manage_options',
+            'vapt-domain-control',
+            [ $this, 'render_domain_control_page' ]
         );
     }
 
@@ -193,7 +239,8 @@ final class VAPT_Security {
      * @param string $hook Current admin page hook.
      */
     public function enqueue_admin_assets( $hook ) {
-        if ( 'toplevel_page_vapt-security' !== $hook ) {
+        // Enqueue on both main page and Domain Control page
+        if ( 'toplevel_page_vapt-security' !== $hook && 'admin_page_vapt-domain-control' !== $hook ) {
             return;
         }
 
@@ -202,14 +249,30 @@ final class VAPT_Security {
         wp_enqueue_style( 'jquery-ui', includes_url( 'css/jquery-ui.css' ) );
 
         // Custom CSS for the plugin.
-        wp_enqueue_style( 'vapt-security-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', [], '1.0.5' );
+        wp_enqueue_style( 'vapt-security-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', [], '2.0.0' );
     }
 
     /**
-     * Render the settings page.
+     * Render the settings page (Standard Admin View).
      */
     public function render_settings_page() {
+        // App Settings for Admins
+        // No OTP required here. Just standard ACL check (handled by WP routing).
+        
         include plugin_dir_path( __FILE__ ) . 'templates/admin-settings.php';
+    }
+
+    /**
+     * Render the Domain Control page (Superadmin View).
+     */
+    public function render_domain_control_page() {
+        // Strict Authorization Check
+        $user = wp_get_current_user();
+        if ( $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
+             wp_die( __( 'Access Denied: Invalid Superadmin Credentials.', 'vapt-security' ) );
+        }
+
+        include plugin_dir_path( __FILE__ ) . 'templates/admin-domain-control.php';
     }
 
     /**
@@ -396,8 +459,8 @@ final class VAPT_Security {
      * @return array Sanitized values.
      */
     public function sanitize_options( $input ) {
+        // Create array
         $sanitized = [];
-
         $sanitized['enable_cron']             = isset( $input['enable_cron'] ) ? 1 : 0;
         $sanitized['rate_limit_max']          = isset( $input['rate_limit_max'] ) ? absint( $input['rate_limit_max'] ) : 10;
         $sanitized['rate_limit_window']       = isset( $input['rate_limit_window'] ) ? absint( $input['rate_limit_window'] ) : 1;
@@ -407,7 +470,9 @@ final class VAPT_Security {
         $sanitized['cron_rate_limit']         = isset( $input['cron_rate_limit'] ) ? absint( $input['cron_rate_limit'] ) : 60;
         $sanitized['enable_logging']          = isset( $input['enable_logging'] ) ? 1 : 0;
 
-        return $sanitized;
+        // Encrypt the data before saving
+        $json = json_encode( $sanitized );
+        return VAPT_Encryption::encrypt( $json );
     }
 
     /* ------------------------------------------------------------------ */
@@ -415,7 +480,7 @@ final class VAPT_Security {
     /* ------------------------------------------------------------------ */
 
     public function render_enable_cron_cb() {
-        $opts   = get_option( 'vapt_security_options', [] );
+        $opts   = $this->get_config();
         $checked = isset( $opts['enable_cron'] ) ? checked( 1, $opts['enable_cron'], false ) : '';
         ?>
         <label>
@@ -427,7 +492,7 @@ final class VAPT_Security {
     }
 
     public function render_rate_limit_max_cb() {
-        $opts = get_option( 'vapt_security_options', [] );
+        $opts = $this->get_config();
         $val  = isset( $opts['rate_limit_max'] ) ? absint( $opts['rate_limit_max'] ) : 10;
         ?>
         <input type="number" name="vapt_security_options[rate_limit_max]" value="<?php echo esc_attr( $val ); ?>" min="1" max="1000" />
@@ -436,7 +501,7 @@ final class VAPT_Security {
     }
 
     public function render_rate_limit_window_cb() {
-        $opts = get_option( 'vapt_security_options', [] );
+        $opts = $this->get_config();
         $val  = isset( $opts['rate_limit_window'] ) ? absint( $opts['rate_limit_window'] ) : 1;
         ?>
         <input type="number" name="vapt_security_options[rate_limit_window]" value="<?php echo esc_attr( $val ); ?>" min="1" max="60" />
@@ -445,7 +510,7 @@ final class VAPT_Security {
     }
 
     public function render_validation_email_cb() {
-        $opts   = get_option( 'vapt_security_options', [] );
+        $opts   = $this->get_config();
         $checked = isset( $opts['validation_email'] ) ? checked( 1, $opts['validation_email'], false ) : '';
         ?>
         <label>
@@ -457,7 +522,7 @@ final class VAPT_Security {
     }
 
     public function render_sanitization_level_cb() {
-        $opts = get_option( 'vapt_security_options', [] );
+        $opts = $this->get_config();
         $val  = isset( $opts['validation_sanitization_level'] ) ? sanitize_text_field( $opts['validation_sanitization_level'] ) : 'standard';
         ?>
         <select name="vapt_security_options[validation_sanitization_level]">
@@ -470,7 +535,7 @@ final class VAPT_Security {
     }
 
     public function render_cron_protection_cb() {
-        $opts   = get_option( 'vapt_security_options', [] );
+        $opts   = $this->get_config();
         $checked = isset( $opts['cron_protection'] ) ? checked( 1, $opts['cron_protection'], false ) : '';
         ?>
         <label>
@@ -482,7 +547,7 @@ final class VAPT_Security {
     }
 
     public function render_cron_rate_limit_cb() {
-        $opts = get_option( 'vapt_security_options', [] );
+        $opts = $this->get_config();
         $val  = isset( $opts['cron_rate_limit'] ) ? absint( $opts['cron_rate_limit'] ) : 60;
         ?>
         <input type="number" name="vapt_security_options[cron_rate_limit]" value="<?php echo esc_attr( $val ); ?>" min="1" max="1000" />
@@ -491,7 +556,7 @@ final class VAPT_Security {
     }
 
     public function render_enable_logging_cb() {
-        $opts   = get_option( 'vapt_security_options', [] );
+        $opts   = $this->get_config();
         $checked = isset( $opts['enable_logging'] ) ? checked( 1, $opts['enable_logging'], false ) : '';
         ?>
         <label>
@@ -517,6 +582,13 @@ final class VAPT_Security {
         if ( ! wp_next_scheduled( 'vapt_cleanup_event' ) ) {
             wp_schedule_event( time(), 'hourly', 'vapt_cleanup_event' );
         }
+    }
+
+    /**
+     * Activate the license.
+     */
+    public function activate_license() {
+        VAPT_License::activate_license();
     }
 
     /**
@@ -680,6 +752,104 @@ final class VAPT_Security {
         }
 
         wp_send_json_success( [ 'message' => __( 'Your message was sent successfully.', 'vapt-security' ) ] );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* OTP Auth                                                         */
+    /* ------------------------------------------------------------------ */
+
+    public function handle_send_otp() {
+        $user = wp_get_current_user();
+        // Strict Check
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        }
+
+        $res = VAPT_OTP::send_otp( $user->ID );
+        if ( is_wp_error( $res ) ) {
+            wp_send_json_error( [ 'message' => $res->get_error_message() ] );
+        }
+
+        wp_send_json_success( [ 'message' => __( 'OTP sent to your email.', 'vapt-security' ) ] );
+    }
+
+    public function handle_verify_otp() {
+        $user = wp_get_current_user();
+        // Strict Check
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        }
+
+        $otp = sanitize_text_field( $_POST['otp'] ?? '' );
+        $res = VAPT_OTP::verify_otp( $user->ID, $otp );
+
+        if ( is_wp_error( $res ) ) {
+            wp_send_json_error( [ 'message' => $res->get_error_message() ] );
+        }
+
+        // Set transient for 5 minutes
+        set_transient( 'vapt_auth_' . $user->ID, true, 300 );
+
+        wp_send_json_success( [ 'message' => __( 'OTP Verified.', 'vapt-security' ) ] );
+    }
+
+    public function handle_update_license() {
+        $user = wp_get_current_user();
+        // Strict Check
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        }
+
+        $type = sanitize_text_field( $_POST['type'] ?? 'standard' );
+        $auto_renew = isset( $_POST['auto_renew'] ) ? (int) $_POST['auto_renew'] : null;
+
+        if ( VAPT_License::update_license( $type, null, $auto_renew ) ) {
+            $license = VAPT_License::get_license();
+            $formatted = $license['expires'] ? date_i18n( get_option( 'date_format' ), $license['expires'] ) : __( 'Never', 'vapt-security' );
+            wp_send_json_success( [ 
+                'message' => __( 'License updated.', 'vapt-security' ),
+                'expires_formatted' => $formatted
+            ] );
+        } else {
+             wp_send_json_error( [ 'message' => __( 'Failed to update license.', 'vapt-security' ) ] );
+        }
+    }
+
+    public function handle_renew_license() {
+        $user = wp_get_current_user();
+        // Strict Check
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        }
+
+        if ( VAPT_License::renew() ) {
+            $license = VAPT_License::get_license();
+            $formatted = $license['expires'] ? date_i18n( get_option( 'date_format' ), $license['expires'] ) : __( 'Never', 'vapt-security' );
+            wp_send_json_success( [ 
+                'message' => __( 'License renewed.', 'vapt-security' ),
+                'expires_formatted' => $formatted
+            ] );
+        } else {
+             wp_send_json_error( [ 'message' => __( 'Failed to renew license.', 'vapt-security' ) ] );
+        }
+    }
+
+    public function handle_save_domain_features() {
+        $user = wp_get_current_user();
+        // Strict Check
+        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || $user->user_email !== 'tanmalik786@gmail.com' ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        }
+        
+        parse_str( $_POST['data'], $data );
+        $features = $data['features'] ?? [];
+        
+        if ( VAPT_Features::update_features( $features ) ) {
+            wp_send_json_success( [ 'message' => 'Features saved.' ] );
+        } else {
+             // Maybe no change?
+             wp_send_json_success( [ 'message' => 'Features saved (no change).' ] );
+        }
     }
 }
 

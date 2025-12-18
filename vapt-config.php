@@ -9,7 +9,7 @@
 // Feature Enable/Disable Configuration
 define('VAPT_FEATURE_WP_CRON_PROTECTION', true);
 define('VAPT_FEATURE_RATE_LIMITING', true);
-define('VAPT_FEATURE_INPUT_VALIDATION', false);
+define('VAPT_FEATURE_INPUT_VALIDATION', true);
 define('VAPT_FEATURE_SECURITY_LOGGING', true);
 
 // Test URLs Configuration
