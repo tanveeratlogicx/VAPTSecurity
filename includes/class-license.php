@@ -24,10 +24,11 @@ class VAPT_License {
             $expires = $start + ( 30 * DAY_IN_SECONDS );
             
             $license_data = [
-                'type'       => self::TYPE_STANDARD,
-                'start'      => $start,
-                'expires'    => $expires,
-                'auto_renew' => false,
+                'type'          => self::TYPE_STANDARD,
+                'start'         => $start,
+                'expires'       => $expires,
+                'auto_renew'    => false,
+                'renewal_count' => 0,
             ];
             
             update_option( self::OPTION_NAME, $license_data );
@@ -82,6 +83,11 @@ class VAPT_License {
         if ( $auto_renew !== null ) {
             $current['auto_renew'] = (bool) $auto_renew;
         }
+        
+        // Ensure count exists
+        if ( ! isset( $current['renewal_count'] ) ) {
+            $current['renewal_count'] = 0;
+        }
 
         return update_option( self::OPTION_NAME, $current );
     }
@@ -102,6 +108,11 @@ class VAPT_License {
         }
 
         if ( ! empty( $license['expires'] ) && time() > $license['expires'] ) {
+            // Check Auto Renew
+            if ( ! empty( $license['auto_renew'] ) ) {
+                self::renew();
+                return true; // Renewed successfully
+            }
             return false;
         }
 
@@ -135,6 +146,12 @@ class VAPT_License {
         }
         
         $license['expires'] = $new_expires;
+        
+        if ( ! isset( $license['renewal_count'] ) ) {
+            $license['renewal_count'] = 0;
+        }
+        $license['renewal_count']++;
+        
         return update_option( self::OPTION_NAME, $license );
     }
 }

@@ -21,10 +21,73 @@ $is_verified_super = $is_superadmin ? get_transient( 'vapt_auth_' . $current_use
         <?php
         // Output security fields.
         settings_fields( 'vapt_security_options_group' );
+
+        // Count enabled tabs
+        $tab_count = 2; // General + Stats
+        if ( VAPT_Features::is_enabled( 'rate_limiting' ) && defined( 'VAPT_FEATURE_RATE_LIMITING' ) && VAPT_FEATURE_RATE_LIMITING ) $tab_count++;
+        if ( VAPT_Features::is_enabled( 'input_validation' ) && defined( 'VAPT_FEATURE_INPUT_VALIDATION' ) && VAPT_FEATURE_INPUT_VALIDATION ) $tab_count++;
+        if ( VAPT_Features::is_enabled( 'cron_protection' ) && defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) && VAPT_FEATURE_WP_CRON_PROTECTION ) $tab_count++;
+        if ( VAPT_Features::is_enabled( 'security_logging' ) && defined( 'VAPT_FEATURE_SECURITY_LOGGING' ) && VAPT_FEATURE_SECURITY_LOGGING ) $tab_count++;
+        
+        $vertical_tabs = ( $tab_count > 5 );
+        $container_class = $vertical_tabs ? 'vapt-vertical-tabs' : '';
         ?>
 
-        <!-- Modern Horizontal Tabs -->
-        <div id="vapt-security-tabs">
+        <?php if ( $vertical_tabs ) : ?>
+        <style>
+            .vapt-vertical-tabs {
+                display: flex;
+                border: 1px solid #c3c4c7;
+                background: #fff;
+            }
+            .vapt-vertical-tabs .ui-tabs-nav {
+                display: block;
+                float: none;
+                width: 200px;
+                padding: 0;
+                margin: 0;
+                background: #f0f0f1;
+                border-right: 1px solid #c3c4c7;
+            }
+            .vapt-vertical-tabs .ui-tabs-nav li {
+                float: none;
+                margin: 0;
+                border: none;
+                border-bottom: 1px solid #c3c4c7;
+                background: #f0f0f1;
+                white-space: normal;
+            }
+            .vapt-vertical-tabs .ui-tabs-nav li a {
+                 display: block;
+                 padding: 10px 15px;
+                 font-weight: 600;
+                 color: #2271b1 !important;
+                 text-decoration: none;
+            }
+            .vapt-vertical-tabs .ui-tabs-nav li.ui-tabs-active {
+                background: #fff;
+                border-bottom: 1px solid #c3c4c7; 
+                margin-right: -1px;
+                border-right: 1px solid #fff;
+            }
+            .vapt-vertical-tabs .ui-tabs-nav li.ui-tabs-active a {
+                color: #1d2327 !important;
+            }
+            .vapt-security-tab-content {
+                flex-grow: 1;
+                padding: 20px;
+                border: none;
+                background: #fff;
+            }
+            /* Hide default jQuery UI borders if we handle them */
+            .vapt-vertical-tabs.ui-tabs {
+                padding: 0;
+            }
+        </style>
+        <?php endif; ?>
+
+        <!-- Modern Horizontal/Vertical Tabs -->
+        <div id="vapt-security-tabs" class="<?php echo esc_attr( $container_class ); ?>">
             <!-- Tab Navigation -->
             <ul class="vapt-security-tabs">
                 <li class="vapt-security-tab"><a href="#tab-general"><?php esc_html_e( 'General', 'vapt-security' ); ?></a></li>

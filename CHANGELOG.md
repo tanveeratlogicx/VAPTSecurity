@@ -2,14 +2,17 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
-## [2.1.1] - 2025-12-18
+## [2.5.0] - 2025-12-18
 
 ### Added
-- Cryptographic integrity verification (HMAC) for `vapt-locked-config.php` to prevent tampering.
+- **Client Zip Generator**: Generates clean, domain-specific plugin zip files for client delivery.
+- **Dynamic Documentation**: `USER_GUIDE.md` automatically updates with the client's actual domain upon installation.
+- **Integrity Verification**: Added HMAC signatures to locked configuration files to prevent tampering.
+- **Smart Filenames**: Zip files are automatically named based on the target domain (e.g., `vapt-security-client.zip`).
 
 ### Changed
-- Renamed "Domain Control" submenu to "Domain Admin" for consistency.
-- Removed redundant "Domain Admin" tab from the main settings page.
+- Consolidates Domain Admin access into a single, Superadmin-only submenu.
+- Excluded development files and internal guides from client builds.
 
 ## [2.1.0] - 2025-12-18
  
