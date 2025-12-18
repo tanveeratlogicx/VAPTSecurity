@@ -23,18 +23,10 @@ if ( ! defined( 'ABSPATH' ) ) {
             <!-- Tab Navigation -->
             <ul class="vapt-security-tabs">
                 <li class="vapt-security-tab"><a href="#tab-general"><?php esc_html_e( 'General', 'vapt-security' ); ?></a></li>
-                <?php if ( defined( 'VAPT_FEATURE_RATE_LIMITING' ) && VAPT_FEATURE_RATE_LIMITING ) : ?>
                 <li class="vapt-security-tab"><a href="#tab-rate-limiter"><?php esc_html_e( 'Rate Limiter', 'vapt-security' ); ?></a></li>
-                <?php endif; ?>
-                <?php if ( defined( 'VAPT_FEATURE_INPUT_VALIDATION' ) && VAPT_FEATURE_INPUT_VALIDATION ) : ?>
                 <li class="vapt-security-tab"><a href="#tab-validation"><?php esc_html_e( 'Input Validation', 'vapt-security' ); ?></a></li>
-                <?php endif; ?>
-                <?php if ( defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) && VAPT_FEATURE_WP_CRON_PROTECTION ) : ?>
                 <li class="vapt-security-tab"><a href="#tab-cron"><?php esc_html_e( 'WP‑Cron Protection', 'vapt-security' ); ?></a></li>
-                <?php endif; ?>
-                <?php if ( defined( 'VAPT_FEATURE_SECURITY_LOGGING' ) && VAPT_FEATURE_SECURITY_LOGGING ) : ?>
                 <li class="vapt-security-tab"><a href="#tab-logging"><?php esc_html_e( 'Security Logging', 'vapt-security' ); ?></a></li>
-                <?php endif; ?>
                 <li class="vapt-security-tab"><a href="#tab-stats"><?php esc_html_e( 'Statistics', 'vapt-security' ); ?></a></li>
             </ul>
 
@@ -45,31 +37,24 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </div>
             </div>
 
-            <?php if ( defined( 'VAPT_FEATURE_RATE_LIMITING' ) && VAPT_FEATURE_RATE_LIMITING ) : ?>
             <div id="tab-rate-limiter" class="vapt-security-tab-content">
                 <div class="settings-section">
                     <?php do_settings_sections( 'vapt_security_rate_limiter' ); ?>
                 </div>
             </div>
-            <?php endif; ?>
 
-            <?php if ( defined( 'VAPT_FEATURE_INPUT_VALIDATION' ) && VAPT_FEATURE_INPUT_VALIDATION ) : ?>
             <div id="tab-validation" class="vapt-security-tab-content">
                 <div class="settings-section">
                     <?php do_settings_sections( 'vapt_security_validation' ); ?>
                 </div>
             </div>
-            <?php endif; ?>
 
-            <?php if ( defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) && VAPT_FEATURE_WP_CRON_PROTECTION ) : ?>
             <div id="tab-cron" class="vapt-security-tab-content">
                 <div class="settings-section">
                     <?php do_settings_sections( 'vapt_security_cron' ); ?>
                 </div>
             </div>
-            <?php endif; ?>
 
-            <?php if ( defined( 'VAPT_FEATURE_SECURITY_LOGGING' ) && VAPT_FEATURE_SECURITY_LOGGING ) : ?>
             <div id="tab-logging" class="vapt-security-tab-content">
                 <div class="settings-section">
                     <?php do_settings_sections( 'vapt_security_logging' ); ?>
@@ -132,7 +117,6 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
 
             <div id="tab-stats" class="vapt-security-tab-content">
                 <div class="settings-section">

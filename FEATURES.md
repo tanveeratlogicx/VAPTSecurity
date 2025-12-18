@@ -26,12 +26,6 @@ Protects against Denial of Service (DoS) attacks targeting the WordPress cron sy
 3. Blocks IPs that exceed the configured limit
 4. Automatically unblocks IPs after a period of time
 
-### Testing WP-Cron Protection
-1. Access `/wp-cron.php` repeatedly in a browser or with curl
-2. After reaching the limit, requests should be blocked with a 429 response
-3. Check the Security Logging tab to see blocked requests
-4. Test with whitelisted IPs to verify they are not blocked
-
 ## Rate Limiting on Form Submission
 
 ### Feature Description
@@ -152,31 +146,16 @@ for ($i = 0; $i < 20; $i++) {
 
 ## Configuration File
 
-The plugin supports a configuration file to enable/disable features and define test URLs. A sample configuration file is included with the plugin.
-
-### Configuration File Loading
-
-The plugin automatically loads a configuration file named `vapt-config.php` if it exists in the WordPress root directory. This allows you to customize plugin behavior without modifying the core plugin files.
-
-### Using the Configuration File
-
-1. Copy `vapt-config-sample.php` to `vapt-config.php` in your WordPress root directory
-2. Customize the settings as needed
-3. The plugin will automatically detect and use these settings
-4. Restart your web server if necessary
-
-### Configuration Options
-
-1. **Feature Control**: Enable/disable specific security features
-2. **Custom URLs**: Define custom test URLs for your environment
-3. **Whitelisting**: Protect trusted IPs from accidental blocking
-4. **Custom Messages**: Personalize user-facing error messages
-5. **Debugging**: Enable detailed logging for troubleshooting
-
-### Sample Configuration File
+The plugin uses a configuration file to enable/disable features and define test URLs. Create a file named `vapt-config.php` in your WordPress root directory:
 
 ```php
 <?php
+/**
+ * VAPT Security Plugin Configuration
+ * 
+ * This file allows you to customize plugin behavior and define test URLs.
+ */
+
 // Feature Enable/Disable Configuration
 define('VAPT_FEATURE_WP_CRON_PROTECTION', true);
 define('VAPT_FEATURE_RATE_LIMITING', true);
@@ -186,6 +165,13 @@ define('VAPT_FEATURE_SECURITY_LOGGING', true);
 // Test URLs Configuration
 define('VAPT_TEST_WP_CRON_URL', '/wp-cron.php');
 define('VAPT_TEST_FORM_SUBMISSION_URL', '/wp-admin/admin-ajax.php');
+
+// Feature Info Display
+define('VAPT_SHOW_FEATURE_INFO', true);
+
+// Advanced Settings
+define('VAPT_CLEANUP_INTERVAL', 3600); // 1 hour in seconds
+define('VAPT_LOG_RETENTION_DAYS', 30);
 
 // Whitelisted IPs (these IPs will never be blocked)
 define('VAPT_WHITELISTED_IPS', [
@@ -202,6 +188,21 @@ define('VAPT_INVALID_NONCE_MESSAGE', 'Invalid request. Please refresh the page a
 define('VAPT_DEBUG_MODE', false);
 ?>
 ```
+
+### Using the Configuration File
+
+1. Create the `vapt-config.php` file in your WordPress root directory
+2. Customize the settings as needed
+3. The plugin will automatically detect and use these settings
+4. Restart your web server if necessary
+
+### Configuration File Benefits
+
+1. **Feature Control**: Enable/disable specific security features
+2. **Custom URLs**: Define custom test URLs for your environment
+3. **Whitelisting**: Protect trusted IPs from accidental blocking
+4. **Custom Messages**: Personalize user-facing error messages
+5. **Debugging**: Enable detailed logging for troubleshooting
 
 ### Testing with Configuration File
 
