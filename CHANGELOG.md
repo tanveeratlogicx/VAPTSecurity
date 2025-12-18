@@ -2,6 +2,22 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [2.1.1] - 2025-12-18
+
+### Added
+- Cryptographic integrity verification (HMAC) for `vapt-locked-config.php` to prevent tampering.
+
+### Changed
+- Renamed "Domain Control" submenu to "Domain Admin" for consistency.
+- Removed redundant "Domain Admin" tab from the main settings page.
+
+## [2.1.0] - 2025-12-18
+ 
+### Added
+- Domain Locked Configuration Generator for Superadmin
+- Submenu "Domain Control" (conditionally visible only to Superadmin)
+- Automatic importing of locked configuration files on activation/init
+
 ## [2.0.0] - 2025-12-18
 
 ### Added

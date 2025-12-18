@@ -3,7 +3,7 @@ Contributors: tanveeratlogicx
 Tags: security, vapt, dos protection, input validation, rate limiting
 Requires at least: 5.0
 Tested up to: 6.4
-Stable tag: 2.0.0
+Stable tag: 2.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -116,6 +116,11 @@ Yes, you can create a `vapt-config.php` file in your WordPress root directory to
 5. Security logging and statistics dashboard
 
 == Changelog ==
+ 
+= 2.1.0 =
+* Added Domain Locked Configuration Generator
+* Exposed Domain Control page as conditional submenu for Superadmin
+* Enhanced configuration portability
 
 = 2.0.0 =
 * Major release with Domain Control features

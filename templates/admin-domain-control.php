@@ -16,7 +16,7 @@ $features = VAPT_Features::get_active_features();
 $all_features = VAPT_Features::get_defined_features();
 ?>
 <div class="wrap">
-    <h1><?php esc_html_e( 'VAPT Security - Domain Control', 'vapt-security' ); ?></h1>
+    <h1><?php esc_html_e( 'VAPT Security - Domain Admin', 'vapt-security' ); ?></h1>
     
     <?php if ( ! $is_verified ) : ?>
         <!-- OTP Form (Similar to before but specific to Superadmin flow) -->
@@ -99,6 +99,38 @@ $all_features = VAPT_Features::get_defined_features();
                 </tr>
             </table>
         </div>
+        
+        <!-- Locked Configuration Generator -->
+        <div class="card" style="margin-top: 20px; padding: 20px;">
+            <h2><?php esc_html_e( 'Locked Configuration Generator', 'vapt-security' ); ?></h2>
+            <p class="description"><?php esc_html_e( 'Generate a portable configuration file locked to a specific domain pattern.', 'vapt-security' ); ?></p>
+            
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Target Domain Pattern', 'vapt-security' ); ?></th>
+                    <td>
+                        <input type="text" id="vapt-lock-domain" class="regular-text" placeholder="*.example.com" value="<?php echo esc_attr( $_SERVER['HTTP_HOST'] ); ?>">
+                        <p class="description"><?php esc_html_e( 'Use * for wildcards (e.g., *.example.com matches staging.example.com).', 'vapt-security' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Include Current Settings', 'vapt-security' ); ?></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="vapt-lock-include-settings" checked>
+                            <?php esc_html_e( 'Export current plugin configuration', 'vapt-security' ); ?>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th></th>
+                    <td>
+                        <button type="button" id="vapt-generate-locked-config" class="button button-primary"><?php esc_html_e( 'Generate & Download Config', 'vapt-security' ); ?></button>
+                        <span id="vapt-generate-msg" style="margin-left: 10px;"></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
     <?php endif; ?>
 </div>
 
@@ -151,6 +183,31 @@ jQuery(document).ready(function($) {
                  if(r.data.expires_formatted) $('#vapt-license-expiry').val(r.data.expires_formatted);
              }
              else $('#vapt-license-msg').html('<span style="color:red">'+r.data.message+'</span>');
+        });
+    });
+    // Locked Config Generator
+    $('#vapt-generate-locked-config').click(function(){
+        var btn = $(this);
+        btn.prop('disabled', true).text('<?php esc_html_e( 'Generating...', 'vapt-security' ); ?>');
+        
+        $.post(ajaxurl, {
+            action: 'vapt_generate_locked_config',
+            domain: $('#vapt-lock-domain').val(),
+            include_settings: $('#vapt-lock-include-settings').is(':checked') ? 1 : 0,
+            nonce: '<?php echo wp_create_nonce( "vapt_locked_config" ); ?>' // We should ideally pass this via wp_localize_script
+        }, function(r){
+            btn.prop('disabled', false).text('<?php esc_html_e( 'Generate & Download Config', 'vapt-security' ); ?>');
+            if(r.success) {
+                $('#vapt-generate-msg').html('<span style="color:green"><?php esc_html_e( 'Configuration generated!', 'vapt-security' ); ?></span>');
+                // Trigger download
+                var blob = new Blob([r.data.content], {type: "application/x-php"});
+                var link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = r.data.filename;
+                link.click();
+            } else {
+                $('#vapt-generate-msg').html('<span style="color:red">'+r.data.message+'</span>');
+            }
         });
     });
 });
