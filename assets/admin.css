@@ -1,0 +1,175 @@
+/**
+ * VAPT Security Admin Styles
+ */
+
+/* Modern Horizontal Tabs */
+.vapt-security-tabs {
+    border-bottom: 1px solid #c3c4c7;
+    margin: 0 0 20px;
+    padding: 0;
+}
+
+.vapt-security-tabs::before {
+    content: "";
+    display: table;
+}
+
+.vapt-security-tabs::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+.vapt-security-tab {
+    float: left;
+    margin-bottom: -1px;
+}
+
+.vapt-security-tab a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    background-color: #f0f0f1;
+    border: 1px solid #c3c4c7;
+    border-bottom: none;
+    color: #50575e;
+    font-weight: 600;
+    transition: all 0.1s ease-in-out;
+}
+
+.vapt-security-tab a:hover {
+    background-color: #ffffff;
+    color: #1d2327;
+}
+
+.vapt-security-tab.ui-state-active a {
+    background-color: #ffffff;
+    border-bottom: 1px solid #ffffff;
+    color: #1d2327;
+    outline: none;
+    box-shadow: none;
+}
+
+.vapt-security-tab-content {
+    display: none;
+    padding: 20px;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    background-color: #ffffff;
+}
+
+.vapt-security-tab-content.ui-tabs-panel {
+    display: block;
+}
+
+.vapt-security-tab-content h3 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Settings Sections */
+.settings-section {
+    margin-bottom: 30px;
+}
+
+.settings-section h4 {
+    margin: 0 0 15px;
+    padding: 0;
+    font-size: 16px;
+    color: #1d2327;
+}
+
+.form-table th {
+    width: 200px;
+    padding: 15px 10px 15px 0;
+}
+
+.form-table td {
+    padding: 12px 10px;
+}
+
+/* Form Elements */
+.form-table input[type="number"],
+.form-table input[type="text"],
+.form-table select {
+    width: 300px;
+    max-width: 100%;
+}
+
+.form-table input[type="checkbox"] {
+    margin-top: 0;
+}
+
+/* Stats Tables */
+.statistics-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.statistics-table th,
+.statistics-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+}
+
+.statistics-table th {
+    background-color: #f6f7f7;
+    font-weight: 600;
+}
+
+.statistics-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Action Buttons */
+.vapt-reset-ip {
+    margin: 5px 0;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .form-table th,
+    .form-table td {
+        display: block;
+        width: auto;
+        padding: 10px 0;
+    }
+    
+    .form-table th {
+        padding-bottom: 5px;
+    }
+    
+    .form-table td {
+        padding-top: 5px;
+    }
+    
+    .form-table input[type="number"],
+    .form-table input[type="text"],
+    .form-table select {
+        width: 100%;
+    }
+}
+
+/* Dashboard Widget Style */
+.vapt-dashboard-widget {
+    padding: 15px 0;
+}
+
+.vapt-dashboard-widget .statistic {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.vapt-dashboard-widget .statistic:last-child {
+    border-bottom: none;
+}
+
+.vapt-dashboard-widget .statistic-value {
+    font-weight: 600;
+}

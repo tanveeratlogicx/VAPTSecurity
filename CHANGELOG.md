@@ -1,0 +1,180 @@
+# Changelog
+
+All notable changes to the VAPT Security plugin will be documented in this file.
+
+## [1.0.5] - 2025-12-15
+
+### Fixed
+- Configuration system now properly hides disabled features in admin interface
+- Conditional rendering of admin tabs based on feature flags
+- Menu positioning now correctly appears as top-level menu above Appearance
+- Fixed configuration file loading path to use plugin directory instead of WordPress root
+- Added descriptive text below checkbox fields to explain feature effects
+
+### Added
+- Test URLs displayed conditionally for each feature section
+- General settings section now includes homepage URL for testing
+- Clickable test URLs with target="_blank" for easy testing
+- Helpful notes and warnings for each test URL
+- More descriptive test URLs for form-related features
+- Separate configuration flag (VAPT_SHOW_TEST_URLS) to control test URL visibility
+- Updated sample configuration file with new flag documentation
+
+## [1.0.4] - 2025-12-15
+
+### Added
+- Comprehensive changelog documentation
+- Sample configuration file (vapt-config-sample.php)
+- Test script for feature verification (test-vapt-features.php)
+- Enhanced documentation files
+
+## [1.0.3] - 2025-12-15
+
+### Added
+- Configuration file support (`vapt-config.php`) for advanced customization
+- Sample configuration file (`vapt-config-sample.php`) for easy setup
+- Comprehensive FEATURES.md documentation with detailed feature explanations
+- Test script (`test-vapt-features.php`) for easy feature testing
+- Feature enable/disable controls through configuration
+- IP whitelisting capability to prevent blocking trusted sources
+- Customizable user messages and debug mode support
+- Detailed testing methodologies and instructions
+
+### Changed
+- Enhanced plugin initialization with configuration file loading
+- Improved feature descriptions in admin interface
+- Added test URL information in settings
+- Updated README.txt with configuration and testing instructions
+- Enhanced security features with whitelisted IPs support
+
+## [1.0.2] - 2025-12-15
+
+### Added
+- Modern horizontal tab interface for admin settings
+- Enhanced CSS styling for better user experience
+- Improved responsive design for mobile devices
+- Tab persistence using localStorage to remember last active tab
+
+### Changed
+- Redesigned admin interface with cleaner, more modern look
+- Updated statistics tables with better styling
+- Improved form layout and spacing
+- Enhanced visual hierarchy in settings panels
+
+## [1.0.1] - 2025-12-15
+
+### Changed
+- Renamed main plugin file from `vapt-security-qoder.php` to `vapt-security.php`
+- Updated plugin URI to reflect correct repository name
+- Removed duplicate plugin folder
+- Cleaned up file structure to maintain single source of truth
+
+### Fixed
+- Resolved file duplication issues
+- Corrected plugin naming inconsistencies
+- Streamlined directory structure
+
+## [1.0.0] - 2025-12-15
+
+### Added
+- Initial release of VAPT Security plugin
+- WP-Cron DoS protection with rate limiting and IP blocking
+- Advanced input validation with multiple sanitization levels
+- Rate limiting functionality with violation tracking
+- Security logging and monitoring features
+- Comprehensive admin interface with tabbed settings
+- Support for Cloudflare and proxy IP detection
+- Scheduled cleanup of old data
+- Detailed documentation and architecture diagrams
+
+### Features
+- **WP-Cron Protection**: Implements rate limiting specifically for wp-cron.php access with configurable limits and automatic IP blocking
+- **Input Validation**: Provides multi-level sanitization (Basic, Standard, Strict) with comprehensive XSS prevention
+- **Rate Limiting**: Configurable request limits per IP address with separate tracking for regular and cron requests
+- **Security Logging**: Detailed logging of security events with statistical dashboard and IP analysis
+- **Performance Optimization**: Efficient data storage with scheduled cleanup and minimal overhead
+
+### Security
+- Protection against DoS attacks via wp-cron.php
+- Strict server-side input validation and sanitization
+- Rate limiting on form submissions to prevent abuse
+- Automatic IP blocking for repeated violations
+- Comprehensive XSS prevention techniques
+- Secure handling of proxy and Cloudflare IPs
+
+### Performance
+- Efficient data structures for quick lookups
+- Hourly cleanup of temporary data
+- Daily optimization of stored data
+- Automatic removal of expired blocks
+- Minimal impact on normal site operations
+
+### Compatibility
+- WordPress 5.0+ compatibility
+- PHP 7.2.24+ support
+- MySQL 5.5.5+ compatibility
+- Works with popular caching plugins
+- Supports multisite installations
+- Compatible with CDN and proxy services
+
+## [Unreleased]
+
+### Planned Improvements
+- Integration with reCAPTCHA and hCaptcha services
+- REST API endpoint protection
+- Enhanced dashboard with real-time monitoring
+- Export functionality for security logs
+- Whitelist functionality for trusted IPs
+- Customizable block duration settings
+- Enhanced statistics and reporting features
+- Multilingual support for admin interface
+
+### Security Enhancements
+- Two-factor authentication integration
+- Brute force protection for login attempts
+- File integrity monitoring
+- Malware scanning capabilities
+- Enhanced firewall rules
+- Advanced threat detection algorithms
+
+### Performance Improvements
+- Redis/Memcached integration for high-traffic sites
+- Database indexing optimizations
+- Asynchronous logging for better performance
+- Caching strategies for frequently accessed data
+- Lazy loading for admin dashboard components
+
+## Roadmap
+
+### Version 1.1.0 (Planned)
+- reCAPTCHA integration
+- REST API protection
+- Enhanced dashboard
+- Export functionality
+
+### Version 1.2.0 (Planned)
+- Two-factor authentication
+- Brute force protection
+- File integrity monitoring
+
+### Version 1.3.0 (Planned)
+- Malware scanning
+- Advanced threat detection
+- Redis/Memcached support
+
+## Release Process
+
+1. Update version number in main plugin file
+2. Update CHANGELOG.md with release notes
+3. Tag release in Git repository
+4. Package plugin for distribution
+5. Update documentation if needed
+6. Announce release to users
+
+## Deprecated Features
+
+None at this time.
+
+## Known Issues
+
+None at this time.
