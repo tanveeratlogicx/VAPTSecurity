@@ -14,6 +14,13 @@ $expiry_date = $license_expires ? date_i18n( get_option( 'date_format' ), $licen
 // Get Active Features
 $features = VAPT_Features::get_active_features();
 $all_features = VAPT_Features::get_defined_features();
+
+// Pre-calculate future expiries for JS
+$future_expiries = [
+    'standard' => date_i18n( get_option( 'date_format' ), time() + ( 30 * DAY_IN_SECONDS ) ),
+    'pro'      => date_i18n( get_option( 'date_format' ), time() + ( 365 * DAY_IN_SECONDS ) - DAY_IN_SECONDS ),
+    'developer' => __( 'Never', 'vapt-security' )
+];
 ?>
 <div class="wrap">
     <h1><?php esc_html_e( 'VAPT Security - Domain Admin', 'vapt-security' ); ?></h1>
@@ -36,7 +43,7 @@ $all_features = VAPT_Features::get_defined_features();
                     <?php esc_html_e( 'Verify', 'vapt-security' ); ?>
                 </button>
                 <div style="margin-top: 10px; text-align: center;">
-                    <span id="vapt-otp-timer-container"><?php esc_html_e( 'Resend in', 'vapt-security' ); ?> <span id="vapt-otp-timer">60</span>s</span>
+                    <span id="vapt-otp-timer-container"><?php esc_html_e( 'Resend in', 'vapt-security' ); ?> <span id="vapt-otp-timer">120</span>s</span>
                     <a href="#" id="vapt-resend-otp" style="display:none;"><?php esc_html_e( 'Resend OTP', 'vapt-security' ); ?></a>
                 </div>
             </div>
@@ -206,7 +213,7 @@ jQuery(document).ready(function($) {
     let timerInterval;
 
     function startOtpTimer() {
-        let timeLeft = 60;
+        let timeLeft = 120;
         $('#vapt-otp-timer').text(timeLeft);
         $('#vapt-otp-timer-container').show();
         $('#vapt-resend-otp').hide();
@@ -268,6 +275,37 @@ jQuery(document).ready(function($) {
     });
 
     // License (Reuse endpoints)
+    
+    // Immediate Frontend Update
+    var futureExpiries = <?php echo json_encode( $future_expiries ); ?>;
+    
+    function toggleRenewButton() {
+        var isChecked = $('#vapt-license-auto-renew').is(':checked');
+        $('#vapt-renew-license').prop('disabled', !isChecked);
+    }
+
+    // Initial state
+    toggleRenewButton();
+
+    $('#vapt-license-auto-renew').change(function(){
+        toggleRenewButton();
+    });
+
+    $('#vapt-license-type').change(function(){
+        var type = $(this).val();
+        if ( futureExpiries[type] ) {
+            $('#vapt-license-expiry').val( futureExpiries[type] );
+        }
+        
+        // Developer Constraint
+        if ( type === 'developer' ) {
+            $('#vapt-license-auto-renew').prop('checked', false).prop('disabled', true);
+        } else {
+            $('#vapt-license-auto-renew').prop('disabled', false);
+        }
+        toggleRenewButton();
+    });
+
     $('#vapt-update-license').click(function(){
         $.post(ajaxurl, {
             action:'vapt_update_license', 

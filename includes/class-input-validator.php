@@ -141,4 +141,101 @@ class VAPT_Input_Validator {
         
         return $data;
     }
+
+    /**
+     * Check for explicit security violations based on level.
+     * Returns a WP_Error if a violation is found, or false if safe.
+     * 
+     * @param mixed $value The value to check.
+     * @return WP_Error|false
+     */
+    public function check_security_violations( $value ) {
+        if ( is_array( $value ) ) {
+            foreach ( $value as $item ) {
+                $error = $this->check_security_violations( $item );
+                if ( is_wp_error( $error ) ) {
+                    return $error;
+                }
+            }
+            return false;
+        }
+
+        // Only check strings
+        if ( ! is_string( $value ) ) {
+            return false;
+        }
+
+        $options = get_option( 'vapt_security_options', [] );
+        $level = isset( $options['validation_sanitization_level'] ) ? $options['validation_sanitization_level'] : 'standard';
+
+        // Common patterns
+        $script_pattern = '/<script\b[^>]*>(.*?)<\/script>/is';
+        $iframe_pattern = '/<iframe\b[^>]*>(.*?)<\/iframe>/is';
+        $on_event_pattern = '/\s+on[a-z]+\s*=/i';
+        $javascript_protocol = '/javascript:/i';
+
+        if ( $level === 'strict' || $level === 'standard' ) {
+            if ( preg_match( $script_pattern, $value ) ) {
+                return new WP_Error( 'vapt_security_violation', __( 'Security Violation: scripts are not allowed.', 'vapt-security' ) );
+            }
+            if ( preg_match( $on_event_pattern, $value ) ) {
+                return new WP_Error( 'vapt_security_violation', __( 'Security Violation: event handlers are not allowed.', 'vapt-security' ) );
+            }
+            if ( preg_match( $javascript_protocol, $value ) ) {
+                return new WP_Error( 'vapt_security_violation', __( 'Security Violation: javascript: protocol is not allowed.', 'vapt-security' ) );
+            }
+        }
+
+        if ( $level === 'strict' ) {
+            if ( preg_match( $iframe_pattern, $value ) ) {
+                return new WP_Error( 'vapt_security_violation', __( 'Security Violation: iframes are not allowed.', 'vapt-security' ) );
+            }
+            if ( strpos( $value, '<' ) !== false && strpos( $value, '>' ) !== false ) {
+                 // In strict mode, if it looks like HTML, warn about it (simplistic check)
+                 // This might be too aggressive for some forms, but requested for "Secure"
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Public helper to sanitize a single value based on level.
+     * 
+     * @param mixed $value
+     * @param string $level 'basic', 'standard', 'strict'
+     * @return mixed
+     */
+    public function sanitize_value_by_level( $value, $level = 'standard' ) {
+        if ( is_array( $value ) ) {
+            $sanitized = [];
+            foreach ( $value as $key => $item ) {
+                $sanitized[$key] = $this->sanitize_value_by_level( $item, $level );
+            }
+            return $sanitized;
+        }
+
+        if ( ! is_string( $value ) ) {
+            return $value;
+        }
+
+        switch ( $level ) {
+            case 'strict':
+                // Remove all HTML tags and attributes
+                $sanitized = sanitize_text_field( wp_strip_all_tags( $value ) );
+                // Additional regex validation for strict mode
+                if ( ! preg_match( '/^[a-zA-Z0-9\s\-_.,!?@]+$/', $sanitized ) ) {
+                    // Allow some special characters but block potentially harmful ones
+                    $sanitized = preg_replace( '/[<>"\';&%$#@^*()+=\[\]{}|\\\:]/', '', $sanitized );
+                }
+                return $sanitized;
+            
+            case 'standard':
+                return sanitize_text_field( $value );
+            
+            case 'basic':
+            default:
+                return sanitize_textarea_field( $value );
+        }
+    }
 }

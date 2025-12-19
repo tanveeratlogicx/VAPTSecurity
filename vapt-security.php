@@ -3,7 +3,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     2.6.0
+ * Version:     2.7.1
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -144,6 +144,17 @@ final class VAPT_Security {
         register_activation_hook( __FILE__, [ $this, 'activate_plugin' ] );
         register_activation_hook( __FILE__, [ $this, 'activate_license' ] );
         register_deactivation_hook( __FILE__, [ $this, 'deactivate_plugin' ] );
+        
+        // Initialize Integrations
+        add_action( 'init', [ $this, 'init_integrations' ] );
+    }
+
+    /**
+     * Initialize third-party integrations.
+     */
+    public function init_integrations() {
+        $integrations = new VAPT_Integrations_Manager();
+        $integrations->init();
     }
 
     /**
@@ -426,6 +437,67 @@ final class VAPT_Security {
                 'vapt_security_validation'
             );
         }
+        
+        /* ------------------------------------------------------------------ */
+        /* Form Integrations tab                                            */
+        /* ------------------------------------------------------------------ */
+        // Only register if Input Validation is enabled
+        if ( VAPT_FEATURE_INPUT_VALIDATION ) {
+            add_settings_section(
+                'vapt_security_integrations',
+                __( 'Form Integrations', 'vapt-security' ),
+                function() {
+                    echo '<p>' . esc_html__( 'Automatically apply Input Validation to third-party form plugins.', 'vapt-security' ) . '</p>';
+                    echo '<div class="notice notice-info inline"><p>';
+                    echo '<strong>' . esc_html__( 'Note for Administrators:', 'vapt-security' ) . '</strong><br>';
+                    echo esc_html__( 'Enabling these integrations will enforcement security checks on form submissions. If "Strict" sanitization is selected, submissions containing HTML or scripts may be blocked or sanitized depending on the hook availability.', 'vapt-security' );
+                    echo '</p></div>';
+                },
+                'vapt_security_validation' // Add to Input Validation tab for now, or create new tab if needed. Using same slug as Validation tab to check settings
+            );
+            
+            // To keep it clean, maybe just append to 'vapt_security_validation' section or create a new one on the same page? 
+            // The render_settings_page uses `do_settings_sections( 'vapt_security_validation' )` ? 
+            // Wait, standard WP settings API logic:
+            // add_settings_section( $id, $title, $callback, $page )
+            // The $page argument links it to do_settings_sections($page).
+            // In templates/admin-settings.php (which I haven't seen fully but I can infer), it likely iterates tabs.
+            // Let's stick "Form Integrations" into the 'vapt_security_validation' page for simplicity if the UI puts them together,
+            // or better, create a subsection in 'vapt_security_validation' PAGE.
+            // Actually, looking at the code above, 'vapt_security_validation' is used as the PAGE ID for Input Validation settings.
+
+            add_settings_field(
+                'integration_cf7',
+                __( 'Contact Form 7', 'vapt-security' ),
+                [ $this, 'render_integration_cf7_cb' ],
+                'vapt_security_validation',
+                'vapt_security_integrations'
+            );
+
+            add_settings_field(
+                'integration_elementor',
+                __( 'Elementor Forms', 'vapt-security' ),
+                [ $this, 'render_integration_elementor_cb' ],
+                'vapt_security_validation',
+                'vapt_security_integrations'
+            );
+
+            add_settings_field(
+                'integration_wpforms',
+                __( 'WPForms', 'vapt-security' ),
+                [ $this, 'render_integration_wpforms_cb' ],
+                'vapt_security_validation',
+                'vapt_security_integrations'
+            );
+
+            add_settings_field(
+                'integration_gravity',
+                __( 'Gravity Forms', 'vapt-security' ),
+                [ $this, 'render_integration_gravity_cb' ],
+                'vapt_security_validation',
+                'vapt_security_integrations'
+            );
+        }
 
         /* ------------------------------------------------------------------ */
         /* WP‑Cron Protection tab                                         */
@@ -512,6 +584,11 @@ final class VAPT_Security {
         $sanitized['cron_protection']         = isset( $input['cron_protection'] ) ? 1 : 0;
         $sanitized['cron_rate_limit']         = isset( $input['cron_rate_limit'] ) ? absint( $input['cron_rate_limit'] ) : 60;
         $sanitized['enable_logging']          = isset( $input['enable_logging'] ) ? 1 : 0;
+        
+        $sanitized['vapt_integration_cf7']       = isset( $input['vapt_integration_cf7'] ) ? 1 : 0;
+        $sanitized['vapt_integration_elementor'] = isset( $input['vapt_integration_elementor'] ) ? 1 : 0;
+        $sanitized['vapt_integration_wpforms']   = isset( $input['vapt_integration_wpforms'] ) ? 1 : 0;
+        $sanitized['vapt_integration_gravity']   = isset( $input['vapt_integration_gravity'] ) ? 1 : 0;
 
         // Encrypt the data before saving
         $json = json_encode( $sanitized );
@@ -574,6 +651,54 @@ final class VAPT_Security {
             <option value="strict" <?php selected( $val, 'strict' ); ?>><?php esc_html_e( 'Strict', 'vapt-security' ); ?></option>
         </select>
         <p class="description"><?php esc_html_e( 'Higher levels provide more security but may block legitimate input.', 'vapt-security' ); ?></p>
+        <?php
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Integration Callbacks                                            */
+    /* ------------------------------------------------------------------ */
+
+    public function render_integration_cf7_cb() {
+        $opts = $this->get_config();
+        $checked = isset( $opts['vapt_integration_cf7'] ) ? checked( 1, $opts['vapt_integration_cf7'], false ) : '';
+        ?>
+        <label>
+            <input type="checkbox" name="vapt_security_options[vapt_integration_cf7]" value="1" <?php echo $checked; ?> />
+            <?php esc_html_e( 'Enable validation for Contact Form 7', 'vapt-security' ); ?>
+        </label>
+        <?php
+    }
+
+    public function render_integration_elementor_cb() {
+        $opts = $this->get_config();
+        $checked = isset( $opts['vapt_integration_elementor'] ) ? checked( 1, $opts['vapt_integration_elementor'], false ) : '';
+        ?>
+        <label>
+            <input type="checkbox" name="vapt_security_options[vapt_integration_elementor]" value="1" <?php echo $checked; ?> />
+            <?php esc_html_e( 'Enable validation for Elementor Forms', 'vapt-security' ); ?>
+        </label>
+        <?php
+    }
+
+    public function render_integration_wpforms_cb() {
+        $opts = $this->get_config();
+        $checked = isset( $opts['vapt_integration_wpforms'] ) ? checked( 1, $opts['vapt_integration_wpforms'], false ) : '';
+        ?>
+        <label>
+            <input type="checkbox" name="vapt_security_options[vapt_integration_wpforms]" value="1" <?php echo $checked; ?> />
+            <?php esc_html_e( 'Enable validation for WPForms', 'vapt-security' ); ?>
+        </label>
+        <?php
+    }
+
+    public function render_integration_gravity_cb() {
+        $opts = $this->get_config();
+        $checked = isset( $opts['vapt_integration_gravity'] ) ? checked( 1, $opts['vapt_integration_gravity'], false ) : '';
+        ?>
+        <label>
+            <input type="checkbox" name="vapt_security_options[vapt_integration_gravity]" value="1" <?php echo $checked; ?> />
+            <?php esc_html_e( 'Enable validation for Gravity Forms', 'vapt-security' ); ?>
+        </label>
         <?php
     }
 
@@ -859,7 +984,27 @@ final class VAPT_Security {
         $type = sanitize_text_field( $_POST['type'] ?? 'standard' );
         $auto_renew = isset( $_POST['auto_renew'] ) ? (int) $_POST['auto_renew'] : null;
 
-        if ( VAPT_License::update_license( $type, null, $auto_renew ) ) {
+        // Check for Type Change
+        $current_license = VAPT_License::get_license();
+        $expires = null;
+
+         // Developer Constraint: Auto Renew must be disabled
+        if ( $type === 'developer' ) {
+            $auto_renew = 0;
+        }
+
+        if ( $current_license && isset( $current_license['type'] ) && $current_license['type'] !== $type ) {
+            // Type Changed! Recalculate expiry from NOW.
+            if ( $type === 'standard' ) {
+                $expires = time() + ( 30 * DAY_IN_SECONDS );
+            } elseif ( $type === 'pro' ) {
+                $expires = time() + ( 365 * DAY_IN_SECONDS ) - DAY_IN_SECONDS;
+            } else {
+                $expires = 0; // Developer
+            }
+        }
+
+        if ( VAPT_License::update_license( $type, $expires, $auto_renew ) ) {
             $license = VAPT_License::get_license();
             $formatted = $license['expires'] ? date_i18n( get_option( 'date_format' ), $license['expires'] ) : __( 'Never', 'vapt-security' );
             wp_send_json_success( [ 
@@ -1191,7 +1336,12 @@ final class VAPT_Security {
         $pattern = $data['domain_pattern'];
         
         // Convert wildcard * to Regex .*
-        $regex = '/^' . str_replace( '\*', '.*', preg_quote( $pattern, '/' ) ) . '$/';
+        // Runtime Normalization: If pattern is single word (no dots, no stars), treat as *pattern*
+        if ( strpos( $pattern, '.' ) === false && strpos( $pattern, '*' ) === false ) {
+            $regex = '/^.*' . preg_quote( $pattern, '/' ) . '.*$/';
+        } else {
+            $regex = '/^' . str_replace( '\*', '.*', preg_quote( $pattern, '/' ) ) . '$/';
+        }
 
         if ( ! preg_match( $regex, $current_host ) ) {
             // MISMATCH

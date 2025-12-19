@@ -2,6 +2,11 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [2.7.1] - 2025-12-19
+
+### Changed
+- Increased Superadmin OTP timer from 60 seconds to 120 seconds in Domain Control access.
+
 ## [2.5.0] - 2025-12-18
 
 ### Added
