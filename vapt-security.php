@@ -3,7 +3,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     2.7.1
+ * Version:     2.7.2
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -1336,12 +1336,9 @@ final class VAPT_Security {
         $pattern = $data['domain_pattern'];
         
         // Convert wildcard * to Regex .*
-        // Runtime Normalization: If pattern is single word (no dots, no stars), treat as *pattern*
-        if ( strpos( $pattern, '.' ) === false && strpos( $pattern, '*' ) === false ) {
-            $regex = '/^.*' . preg_quote( $pattern, '/' ) . '.*$/';
-        } else {
-            $regex = '/^' . str_replace( '\*', '.*', preg_quote( $pattern, '/' ) ) . '$/';
-        }
+        // Runtime Normalization: Always treat as *pattern*
+        $regex = '/^.*' . str_replace( '\*', '.*', preg_quote( $pattern, '/' ) ) . '.*$/';
+
 
         if ( ! preg_match( $regex, $current_host ) ) {
             // MISMATCH

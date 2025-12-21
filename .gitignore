@@ -7,6 +7,8 @@
 *~
 .DS_Store
 
+vapt-locked-config.php
+
 # Dependency directories
 node_modules/
 vendor/
