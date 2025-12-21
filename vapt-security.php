@@ -3,7 +3,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     2.7.2
+ * Version:     2.7.5
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -17,25 +17,36 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+// Load Domain Features
+$vapt_domain_features = get_option( 'vapt_domain_features', [] );
+
+// Helper to get feature state (Default: true)
+$vapt_is_cron_active = isset( $vapt_domain_features['cron_protection'] ) ? (bool) $vapt_domain_features['cron_protection'] : true;
+$vapt_is_rate_active = isset( $vapt_domain_features['rate_limiting'] ) ? (bool) $vapt_domain_features['rate_limiting'] : true;
+$vapt_is_input_active = isset( $vapt_domain_features['input_validation'] ) ? (bool) $vapt_domain_features['input_validation'] : true;
+$vapt_is_logging_active = isset( $vapt_domain_features['security_logging'] ) ? (bool) $vapt_domain_features['security_logging'] : true;
+
+// Define constants if not already defined in config
+if ( ! defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) ) {
+    define( 'VAPT_FEATURE_WP_CRON_PROTECTION', $vapt_is_cron_active );
+}
+if ( ! defined( 'VAPT_FEATURE_RATE_LIMITING' ) ) {
+    define( 'VAPT_FEATURE_RATE_LIMITING', $vapt_is_rate_active );
+}
+if ( ! defined( 'VAPT_FEATURE_INPUT_VALIDATION' ) ) {
+    define( 'VAPT_FEATURE_INPUT_VALIDATION', $vapt_is_input_active );
+}
+if ( ! defined( 'VAPT_FEATURE_SECURITY_LOGGING' ) ) {
+    define( 'VAPT_FEATURE_SECURITY_LOGGING', $vapt_is_logging_active );
+}
+
 // Load configuration file if it exists
 $config_file = plugin_dir_path( __FILE__ ) . 'vapt-config.php';
 if ( file_exists( $config_file ) ) {
     require_once $config_file;
 }
 
-// Define constants if not already defined in config
-if ( ! defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) ) {
-    define( 'VAPT_FEATURE_WP_CRON_PROTECTION', true );
-}
-if ( ! defined( 'VAPT_FEATURE_RATE_LIMITING' ) ) {
-    define( 'VAPT_FEATURE_RATE_LIMITING', true );
-}
-if ( ! defined( 'VAPT_FEATURE_INPUT_VALIDATION' ) ) {
-    define( 'VAPT_FEATURE_INPUT_VALIDATION', true );
-}
-if ( ! defined( 'VAPT_FEATURE_SECURITY_LOGGING' ) ) {
-    define( 'VAPT_FEATURE_SECURITY_LOGGING', true );
-}
+
 if ( ! defined( 'VAPT_TEST_WP_CRON_URL' ) ) {
     define( 'VAPT_TEST_WP_CRON_URL', '/wp-cron.php' );
 }
@@ -222,7 +233,9 @@ final class VAPT_Security {
         // Disable default WP-Cron if option is enabled
         $opts = $this->get_config();
         if ( isset( $opts['enable_cron'] ) && $opts['enable_cron'] ) {
-            define( 'DISABLE_WP_CRON', true );
+            if ( ! defined( 'DISABLE_WP_CRON' ) ) {
+                define( 'DISABLE_WP_CRON', true );
+            }
         }
     }
 
@@ -342,27 +355,31 @@ final class VAPT_Security {
         /* ------------------------------------------------------------------ */
         /* General tab                                                        */
         /* ------------------------------------------------------------------ */
-        add_settings_section(
-            'vapt_security_general',
-            __( 'General Settings', 'vapt-security' ),
-            function() {
-                if ( VAPT_SHOW_FEATURE_INFO ) {
-                    echo '<p>' . esc_html__( 'General settings for the VAPT Security plugin.', 'vapt-security' ) . '</p>';
-                }
-                if ( VAPT_SHOW_TEST_URLS ) {
-                    echo '<p><strong>' . esc_html__( 'Test URL:', 'vapt-security' ) . '</strong> <a href="' . esc_url( home_url( '/' ) ) . '" target="_blank">' . esc_url( home_url( '/' ) ) . '</a></p>';
-                }
-            },
-            'vapt_security_general'
-        );
+        if ( VAPT_FEATURE_WP_CRON_PROTECTION ) {
+            add_settings_section(
+                'vapt_security_general',
+                __( 'General Settings', 'vapt-security' ),
+                function() {
+                    if ( VAPT_SHOW_FEATURE_INFO ) {
+                        echo '<p>' . esc_html__( 'General settings for the VAPT Security plugin.', 'vapt-security' ) . '</p>';
+                    }
+                    if ( VAPT_SHOW_TEST_URLS ) {
+                        echo '<p><strong>' . esc_html__( 'Test URL:', 'vapt-security' ) . '</strong> <a href="' . esc_url( home_url( '/' ) ) . '" target="_blank">' . esc_url( home_url( '/' ) ) . '</a></p>';
+                    }
+                },
+                'vapt_security_general'
+            );
+        }
 
-        add_settings_field(
-            'enable_cron',
-            __( 'Disable WP‑Cron', 'vapt-security' ),
-            [ $this, 'render_enable_cron_cb' ],
-            'vapt_security_general',
-            'vapt_security_general'
-        );
+        if ( VAPT_FEATURE_WP_CRON_PROTECTION ) {
+            add_settings_field(
+                'enable_cron',
+                __( 'Disable WP‑Cron', 'vapt-security' ),
+                [ $this, 'render_enable_cron_cb' ],
+                'vapt_security_general',
+                'vapt_security_general'
+            );
+        }
 
         /* ------------------------------------------------------------------ */
         /* Rate Limiter tab                                                  */

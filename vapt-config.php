@@ -7,10 +7,19 @@
  */
 
 // Feature Enable/Disable Configuration
-define('VAPT_FEATURE_WP_CRON_PROTECTION', true);
-define('VAPT_FEATURE_RATE_LIMITING', true);
-define('VAPT_FEATURE_INPUT_VALIDATION', true);
-define('VAPT_FEATURE_SECURITY_LOGGING', true);
+// Feature Enable/Disable Configuration
+if ( ! defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) ) {
+    define('VAPT_FEATURE_WP_CRON_PROTECTION', true);
+}
+if ( ! defined( 'VAPT_FEATURE_RATE_LIMITING' ) ) {
+    define('VAPT_FEATURE_RATE_LIMITING', true);
+}
+if ( ! defined( 'VAPT_FEATURE_INPUT_VALIDATION' ) ) {
+    define('VAPT_FEATURE_INPUT_VALIDATION', true);
+}
+if ( ! defined( 'VAPT_FEATURE_SECURITY_LOGGING' ) ) {
+    define('VAPT_FEATURE_SECURITY_LOGGING', true);
+}
 
 // Test URLs Configuration
 define('VAPT_TEST_WP_CRON_URL', '/wp-cron.php');

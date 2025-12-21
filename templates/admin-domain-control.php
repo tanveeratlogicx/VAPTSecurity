@@ -21,6 +21,14 @@ $future_expiries = [
     'pro'      => date_i18n( get_option( 'date_format' ), time() + ( 365 * DAY_IN_SECONDS ) - DAY_IN_SECONDS ),
     'developer' => __( 'Never', 'vapt-security' )
 ];
+
+// Feature Descriptions
+$feature_descriptions = [
+    'rate_limiting'    => __( 'Rate limits form submissions to prevent spam.', 'vapt-security' ),
+    'input_validation' => __( 'Validates user input to prevent XSS.', 'vapt-security' ),
+    'cron_protection'  => __( 'Protects wp-cron.php and allows disabling default cron.', 'vapt-security' ),
+    'security_logging' => __( 'Logs security events for audit.', 'vapt-security' ),
+];
 ?>
 <div class="wrap">
     <h1><?php esc_html_e( 'VAPT Security - Domain Admin', 'vapt-security' ); ?></h1>
@@ -66,13 +74,13 @@ $future_expiries = [
                     margin-bottom: 20px;
                 }
                 .vapt-feature-item {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
+                    /* display: flex; align-items: center; justify-content: space-between; */ /* Removed conflicting flex */
                     background: #fff;
                     border: 1px solid #ccd0d4;
-                    padding: 8px 15px; /* Reduced height/padding */
+                    padding: 15px;
                     border-radius: 4px;
+                    display: flex;
+                    flex-direction: column;
                 }
                 .vapt-feature-item h4 {
                     margin: 0;
@@ -87,11 +95,16 @@ $future_expiries = [
                     <div class="vapt-feature-grid">
                         <?php foreach( $all_features as $slug => $default ) : ?>
                         <div class="vapt-feature-item">
-                            <h4><?php echo esc_html( ucwords( str_replace( '_', ' ', $slug ) ) ); ?></h4>
-                            <label class="switch">
-                                <input type="checkbox" name="features[<?php echo esc_attr( $slug ); ?>]" value="1" <?php checked( VAPT_Features::is_enabled( $slug ) ); ?>>
-                                <span class="slider round"></span>
-                            </label>
+                            <div class="vapt-feature-header" style="display:flex; justify-content:space-between; align-items:center;">
+                                <h4><?php echo esc_html( ucwords( str_replace( '_', ' ', $slug ) ) ); ?></h4>
+                                <label class="switch">
+                                    <input type="checkbox" name="features[<?php echo esc_attr( $slug ); ?>]" value="1" <?php checked( VAPT_Features::is_enabled( $slug ) ); ?>>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <?php if ( isset( $feature_descriptions[$slug] ) ) : ?>
+                                <p class="description" style="margin: 5px 0 0; font-size: 12px;"><?php echo esc_html( $feature_descriptions[$slug] ); ?></p>
+                            <?php endif; ?>
                         </div>
                         <?php endforeach; ?>
                     </div>

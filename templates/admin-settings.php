@@ -23,9 +23,7 @@ $is_verified_super = $is_superadmin ? get_transient( 'vapt_auth_' . $current_use
         settings_fields( 'vapt_security_options_group' );
 
         // Count enabled tabs
-        $tab_count = 2; // General + Stats
-        if ( VAPT_Features::is_enabled( 'rate_limiting' ) && defined( 'VAPT_FEATURE_RATE_LIMITING' ) && VAPT_FEATURE_RATE_LIMITING ) $tab_count++;
-        if ( VAPT_Features::is_enabled( 'input_validation' ) && defined( 'VAPT_FEATURE_INPUT_VALIDATION' ) && VAPT_FEATURE_INPUT_VALIDATION ) $tab_count++;
+        $tab_count = 1; // Stats
         if ( VAPT_Features::is_enabled( 'cron_protection' ) && defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) && VAPT_FEATURE_WP_CRON_PROTECTION ) $tab_count++;
         if ( VAPT_Features::is_enabled( 'security_logging' ) && defined( 'VAPT_FEATURE_SECURITY_LOGGING' ) && VAPT_FEATURE_SECURITY_LOGGING ) $tab_count++;
         
@@ -90,7 +88,9 @@ $is_verified_super = $is_superadmin ? get_transient( 'vapt_auth_' . $current_use
         <div id="vapt-security-tabs" class="<?php echo esc_attr( $container_class ); ?>">
             <!-- Tab Navigation -->
             <ul class="vapt-security-tabs">
+                <?php if ( defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) && VAPT_FEATURE_WP_CRON_PROTECTION ) : ?>
                 <li class="vapt-security-tab"><a href="#tab-general"><?php esc_html_e( 'General', 'vapt-security' ); ?></a></li>
+                <?php endif; ?>
                 <?php if ( VAPT_Features::is_enabled( 'rate_limiting' ) && defined( 'VAPT_FEATURE_RATE_LIMITING' ) && VAPT_FEATURE_RATE_LIMITING ) : ?>
                 <li class="vapt-security-tab"><a href="#tab-rate-limiter"><?php esc_html_e( 'Rate Limiter', 'vapt-security' ); ?></a></li>
                 <?php endif; ?>
@@ -108,11 +108,13 @@ $is_verified_super = $is_superadmin ? get_transient( 'vapt_auth_' . $current_use
             </ul>
 
             <!-- Tab Content -->
+            <?php if ( defined( 'VAPT_FEATURE_WP_CRON_PROTECTION' ) && VAPT_FEATURE_WP_CRON_PROTECTION ) : ?>
             <div id="tab-general" class="vapt-security-tab-content">
                 <div class="settings-section">
                     <?php do_settings_sections( 'vapt_security_general' ); ?>
                 </div>
             </div>
+            <?php endif; ?>
 
             <?php if ( VAPT_Features::is_enabled( 'rate_limiting' ) && defined( 'VAPT_FEATURE_RATE_LIMITING' ) && VAPT_FEATURE_RATE_LIMITING ) : ?>
             <div id="tab-rate-limiter" class="vapt-security-tab-content">
