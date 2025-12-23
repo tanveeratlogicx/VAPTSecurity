@@ -3,7 +3,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     2.8.0
+ * Version:     2.8.1
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -13,7 +13,7 @@
  */
 
 if ( ! defined( 'VAPT_VERSION' ) ) {
-    define( 'VAPT_VERSION', '2.8.0' );
+    define( 'VAPT_VERSION', '2.8.1' );
 }
 
 // If this file is called directly, abort.
@@ -218,7 +218,7 @@ final class VAPT_Security {
      * 
      * @return bool
      */
-    private function is_local_environment() {
+    public function is_local_environment() {
         $host = $_SERVER['HTTP_HOST'] ?? '';
         $server_ip = $_SERVER['SERVER_ADDR'] ?? '';
         $remote_ip = $_SERVER['REMOTE_ADDR'] ?? '';
@@ -355,7 +355,7 @@ final class VAPT_Security {
                     // Enqueue ours
                     wp_enqueue_script( 'jquery-ui-tabs' );
                     wp_enqueue_style( 'jquery-ui', includes_url( 'css/jquery-ui.css' ) );
-                    wp_enqueue_style( 'vapt-security-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', [], '2.8.0' );
+                    wp_enqueue_style( 'vapt-security-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', [], '2.8.1' );
 
                     // Manually print styles/scripts instead of firing admin_enqueue_scripts which requires get_current_screen()
                     wp_print_styles();
@@ -526,7 +526,7 @@ final class VAPT_Security {
         wp_enqueue_style( 'jquery-ui', includes_url( 'css/jquery-ui.css' ) );
 
         // Custom CSS for the plugin.
-        wp_enqueue_style( 'vapt-security-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', [], '2.6.0' );
+        wp_enqueue_style( 'vapt-security-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', [], '2.8.1' );
     }
 
     /**
@@ -1329,6 +1329,10 @@ final class VAPT_Security {
 ";
 
         if ( file_put_contents( plugin_dir_path( __FILE__ ) . 'vapt-locked-config.php', $file_content ) ) {
+            if ( $this->is_local_environment() ) {
+                $this->import_locked_config( $payload );
+            }
+
             wp_send_json_success([
                 'message'  => __( 'Configuration generated and saved to server.', 'vapt-security' ),
                 'filename' => 'vapt-locked-config.php'
