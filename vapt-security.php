@@ -144,14 +144,22 @@ final class VAPT_Security {
 
         // License AJAX
         add_action( 'wp_ajax_vapt_update_license', [ $this, 'handle_update_license' ] );
+        add_action( 'wp_ajax_nopriv_vapt_update_license', [ $this, 'handle_update_license' ] );
         add_action( 'wp_ajax_vapt_renew_license', [ $this, 'handle_renew_license' ] );
+        add_action( 'wp_ajax_nopriv_vapt_renew_license', [ $this, 'handle_renew_license' ] );
         
         // Domain Features AJAX
         add_action( 'wp_ajax_vapt_save_domain_features', [ $this, 'handle_save_domain_features' ] );
+        add_action( 'wp_ajax_nopriv_vapt_save_domain_features', [ $this, 'handle_save_domain_features' ] );
         
         // Locked Config AJAX
         add_action( 'wp_ajax_vapt_generate_locked_config', [ $this, 'handle_generate_locked_config' ] );
+        add_action( 'wp_ajax_nopriv_vapt_generate_locked_config', [ $this, 'handle_generate_locked_config' ] );
         add_action( 'wp_ajax_vapt_generate_client_zip', [ $this, 'handle_generate_client_zip' ] );
+        add_action( 'wp_ajax_vapt_generate_client_zip', [ $this, 'handle_generate_client_zip' ] );
+        add_action( 'wp_ajax_nopriv_vapt_generate_client_zip', [ $this, 'handle_generate_client_zip' ] );
+        add_action( 'wp_ajax_vapt_reimport_config', [ $this, 'handle_reimport_config' ] );
+        add_action( 'wp_ajax_nopriv_vapt_reimport_config', [ $this, 'handle_reimport_config' ] );
 
         add_action( 'init', [ $this, 'initialize_security_logging' ] );
         add_action( 'init', [ $this, 'enforce_domain_lock' ], 0 ); // Run early
@@ -356,6 +364,9 @@ final class VAPT_Security {
                     // We cannot fire 'admin_head' safely as it brings in too many dependencies expecting admin context.
                     // do_action( 'admin_head' );
                 ?>
+                <script type="text/javascript">
+                    var ajaxurl = "<?php echo admin_url( 'admin-ajax.php' ); ?>";
+                </script>
                 <style>
                     html { padding-top: 0 !important; }
                     #wpcontent { margin-left: 0 !important; padding-left: 20px; }
@@ -1564,6 +1575,23 @@ final class VAPT_Security {
                     });
                 }
                 // Return early to allow execution, but DO NOT import/rename (keep the lock file intact for testing)
+                
+                // FIX: Check if we need to sync build info anyway (so the UI updates)
+                $current_build = self::get_build_info();
+                $file_time = $data['generated_at'] ?? 0;
+                $stored_time = $current_build['generated_at'] ?? 0;
+                
+                if ( $file_time > $stored_time ) {
+                    // Sync settings but don't delete file
+                    $this->import_locked_config( $data );
+                    
+                    if ( is_admin() && ! $is_activation ) {
+                        add_action( 'admin_notices', function() {
+                             echo '<div class="notice notice-info is-dismissible"><p>' . esc_html__( 'VAPT Security Info: Settings optimized/synced from locked configuration (Local Mode).', 'vapt-security' ) . '</p></div>';
+                        });
+                    }
+                }
+
                 return;
             }
 
@@ -1598,12 +1626,8 @@ final class VAPT_Security {
         
         // MATCH Found!
         
-        // Logic for Import (same as before)
-        if ( ! empty( $data['settings'] ) ) {
-            $json = json_encode( $data['settings'] );
-            $encrypted = VAPT_Encryption::encrypt( $json );
-            update_option( 'vapt_security_options', $encrypted );
-        }
+        // Logic for Import
+        $this->import_locked_config( $data );
 
         // Rename file to prevent re-import (and re-execution of this heavy check)
         @rename( $config_file, $config_file . '.imported' );
@@ -1629,6 +1653,94 @@ final class VAPT_Security {
                 echo '</p></div>';
             });
         }
+    }
+
+    /**
+     * Helper: Import parameters from locked config data.
+     * 
+     * @param array $data Decoded configuration data.
+     */
+    private function import_locked_config( $data ) {
+        // 1. Update Settings
+        if ( isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
+            // Encrypt and save options
+            $json = json_encode( $data['settings'] );
+            $encrypted = VAPT_Encryption::encrypt( $json );
+            update_option( 'vapt_security_options', $encrypted );
+        }
+        
+        // 2. Update Build Info
+        update_option( 'vapt_build_info', [
+            'generated_at'   => $data['generated_at'] ?? 0,
+            'domain_pattern' => $data['domain_pattern'] ?? '',
+            'imported_at'    => time()
+        ]);
+    }
+
+    /**
+     * AJAX Handler: Re-import Configuration (Force)
+     */
+    public function handle_reimport_config() {
+        if ( ! $this->verify_superadmin_access() ) {
+            wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+        }
+
+        // Look for file (imported or raw)
+        $config_file = plugin_dir_path( __FILE__ ) . 'vapt-locked-config.php';
+        if ( ! file_exists( $config_file ) ) {
+            $config_file .= '.imported';
+        }
+
+        if ( ! file_exists( $config_file ) ) {
+            wp_send_json_error( [ 'message' => __( 'Configuration file not found.', 'vapt-security' ) ] );
+        }
+
+        $file_content = file_get_contents( $config_file );
+        
+        // Extract Data
+        $vapt_locked_config_data = null;
+        $vapt_locked_config_sig  = null;
+         
+        if ( preg_match( '/\$vapt_locked_config_data\s*=\s*\'(.*?)\';/s', $file_content, $matches ) ) {
+            $vapt_locked_config_data = stripslashes( $matches[1] );
+        }
+        if ( preg_match( '/\$vapt_locked_config_sig\s*=\s*\'([a-f0-9]+)\';/', $file_content, $matches ) ) {
+            $vapt_locked_config_sig = $matches[1];
+        }
+
+        if ( ! $vapt_locked_config_data || ! $vapt_locked_config_sig ) {
+             wp_send_json_error( [ 'message' => __( 'Invalid configuration file format.', 'vapt-security' ) ] );
+        }
+
+        // Verify Integrity
+        $salt = 'VAPT_LOCKED_CONFIG_INTEGRITY_SALT_v2';
+        $check_sig = hash_hmac( 'sha256', $vapt_locked_config_data, $salt );
+        
+        if ( ! hash_equals( $check_sig, $vapt_locked_config_sig ) ) {
+             wp_send_json_error( [ 'message' => __( 'Integrity check failed.', 'vapt-security' ) ] );
+        }
+
+        $data = json_decode( $vapt_locked_config_data, true );
+        if ( ! $data ) {
+             wp_send_json_error( [ 'message' => __( 'Failed to decode configuration data.', 'vapt-security' ) ] );
+        }
+
+        // Perform Import (Force bypasses domain check)
+        $this->import_locked_config( $data );
+
+        // If it was the raw file, rename it to .imported
+        if ( substr( $config_file, -9 ) !== '.imported' ) {
+            @rename( $config_file, $config_file . '.imported' );
+        }
+
+        wp_send_json_success( [ 'message' => __( 'Configuration re-imported successfully.', 'vapt-security' ) ] );
+    }
+
+    /**
+     * Get Build Info
+     */
+    public static function get_build_info() {
+        return get_option( 'vapt_build_info', [] );
     }
 }
 

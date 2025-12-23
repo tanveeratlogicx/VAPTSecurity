@@ -13,7 +13,12 @@ $expiry_date = $license_expires ? date_i18n( get_option( 'date_format' ), $licen
 
 // Get Active Features
 $features = VAPT_Features::get_active_features();
+// Get Active Features
+$features = VAPT_Features::get_active_features();
 $all_features = VAPT_Features::get_defined_features();
+$build_info   = VAPT_Security::get_build_info();
+$build_ver    = $build_info['generated_at'] ? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $build_info['generated_at'] ) : __( 'N/A', 'vapt-security' );
+$build_domain = $build_info['domain_pattern'] ?? 'N/A';
 
 // Pre-calculate future expiries for JS
 $future_expiries = [
@@ -252,6 +257,23 @@ $vapt_version = defined( 'VAPT_VERSION' ) ? VAPT_VERSION : '2.x';
                 <h2><?php esc_html_e( 'Locked Configuration Generator', 'vapt-security' ); ?></h2>
                 <p class="description"><?php esc_html_e( 'Generate a portable configuration file locked to a specific domain pattern.', 'vapt-security' ); ?></p>
                 
+                <!-- Build Info Card -->
+                 <div class="card" style="padding: 15px; margin-bottom: 20px; background: #f0f0f1; border: 1px solid #ccd0d4;">
+                     <h3 style="margin-top:0;">Current Build Information</h3>
+                    <p>
+                        <strong>Generated At:</strong> <?php echo esc_html( $build_ver ); ?><br>
+                        <strong>Locked Domain:</strong> <code><?php echo esc_html( $build_domain ); ?></code><br>
+                        <strong>Imported At:</strong> <?php echo esc_html( isset($build_info['imported_at']) ? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $build_info['imported_at'] ) : 'N/A' ); ?>
+                    </p>
+                    <button type="button" id="vapt-reimport-config" class="button button-secondary">
+                        <?php esc_html_e( 'Force Re-import from Server File', 'vapt-security' ); ?>
+                    </button>
+                    <span id="vapt-reimport-msg" style="margin-left: 10px;"></span>
+                    <p class="description" style="margin-top:5px; font-size:12px;">
+                        Forces an import from <code>vapt-locked-config.php</code> (or .imported) regardless of domain match. Use this to verify configurations on a test environment.
+                    </p>
+                 </div>
+                
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php esc_html_e( 'Target Domain Pattern', 'vapt-security' ); ?></th>
@@ -468,6 +490,26 @@ jQuery(document).ready(function($) {
                 link.click();
             } else {
                 $('#vapt-generate-msg').html('<span style="color:red">'+r.data.message+'</span>');
+            }
+        });
+            }
+        });
+    });
+
+    // Re-import Config
+    $('#vapt-reimport-config').click(function(){
+        var btn = $(this);
+        btn.prop('disabled', true).text('<?php esc_html_e( 'Importing...', 'vapt-security' ); ?>');
+        $.post(ajaxurl, {
+             action: 'vapt_reimport_config',
+             nonce: '<?php echo wp_create_nonce( "vapt_locked_config" ); ?>' // Reuse same context nonce or create new one? Locked config nonce fits.
+        }, function(r){
+            btn.prop('disabled', false).text('<?php esc_html_e( 'Force Re-import from Server File', 'vapt-security' ); ?>');
+            if(r.success) {
+                 $('#vapt-reimport-msg').html('<span style="color:green">'+r.data.message+'</span>');
+                 setTimeout(function(){ location.reload(); }, 1500);
+            } else {
+                 $('#vapt-reimport-msg').html('<span style="color:red">'+r.data.message+'</span>');
             }
         });
     });

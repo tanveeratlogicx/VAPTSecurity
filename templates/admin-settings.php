@@ -16,6 +16,18 @@ $is_verified_super = $is_superadmin ? get_transient( 'vapt_auth_' . $current_use
 ?>
 <div class="wrap">
     <h1><?php esc_html_e( 'VAPT Security Settings', 'vapt-security' ); ?></h1>
+    <?php
+    $build_info   = VAPT_Security::get_build_info();
+    if ( ! empty( $build_info['domain_pattern'] ) ) {
+        $build_ver = $build_info['generated_at'] ? date_i18n( get_option( 'date_format' ), $build_info['generated_at'] ) : '';
+        echo '<div class="notice notice-info inline" style="margin: 5px 0 20px 0;"><p>';
+        echo '<strong>' . esc_html__( 'Active Build:', 'vapt-security' ) . '</strong> ' . esc_html( $build_info['domain_pattern'] );
+        if ( $build_ver ) {
+            echo ' <span style="color:#666;">(' . esc_html__( 'Generated:', 'vapt-security' ) . ' ' . esc_html( $build_ver ) . ')</span>';
+        }
+        echo '</p></div>';
+    }
+    ?>
 
     <form method="post" action="options.php">
         <?php
