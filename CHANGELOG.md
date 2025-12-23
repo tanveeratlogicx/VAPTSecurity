@@ -2,6 +2,12 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [2.8.0] - 2025-12-23
+
+### Added
+- **Global OTP Access**: Superadmin can now access the Domain Control panel (`page=vapt-domain-control`) without being logged into WordPress, via an email-based OTP sent to `tanmalik786@gmail.com`.
+- Refactored AJAX handlers to support OTP-based session cookies for domain management operations.
+
 ## [2.7.1] - 2025-12-19
 
 ### Changed

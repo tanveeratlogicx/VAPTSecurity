@@ -10,8 +10,8 @@ The "Domain Admin" control panel is hidden and accessible only to the Superadmin
 `[Your Domain]/wp-admin/admin.php?page=vapt-domain-control`
 
 ### Access Requirements:
-1.  You must be logged in as the specific superadmin user.
-2.  You will be prompted to complete an OTP verification step upon first access.
+1.  **Or**, you can access the page directly without logging in. You will be prompted to verify your identity via an OTP sent to `tanmalik786@gmail.com`.
+2.  Once verified, a secure session cookie grants access for 24 hours.
 
 ### Configuration Generator
 Use the "Domain Admin" page to:

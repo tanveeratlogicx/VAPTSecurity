@@ -9,7 +9,7 @@ This guide provides an overview of the security features enabled by the VAPT Sec
 Protects your site from Denial of Service (DoS) attacks targeting the `wp-cron.php` file. It blocks external requests to this file unless they come from authorized IP addresses or contain a secret key.
 
 **How to Verify:**
-1.  Open your browser and visit: `https://your-domain.com/wp-cron.php`
+1.  Open your browser and visit: `https://wptest.local/wp-cron.php`
 2.  **Result:** You should see a blank screen or a simple "Access Denied" / 403 error message (depending on configuration), indicating that external access is blocked.
 3.  *Note:* Cron jobs triggered internally by WordPress will still function correctly.
 

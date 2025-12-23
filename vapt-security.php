@@ -3,7 +3,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     2.7.5
+ * Version:     2.8.0
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -11,6 +11,10 @@
  *
  * @package VAPT_Security
  */
+
+if ( ! defined( 'VAPT_VERSION' ) ) {
+    define( 'VAPT_VERSION', '2.8.0' );
+}
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
@@ -127,6 +131,7 @@ final class VAPT_Security {
     private function init() {
         // Hook into WordPress.
         add_action( 'init', [ $this, 'protect_wp_cron' ], 1 );
+        add_action( 'init', [ $this, 'intercept_domain_control_access' ], 5 ); // Run early to intercept
         add_action( 'admin_menu', [ $this, 'register_admin_menu' ] );
         add_action( 'admin_init', [ $this, 'register_settings' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_assets' ] );
@@ -169,6 +174,38 @@ final class VAPT_Security {
     }
 
     /**
+     * Check if the current request is authorized for Superadmin actions.
+     * Supports both standard WP User and VAPT Cookie sessions.
+     * 
+     * @return bool
+     */
+    private function verify_superadmin_access() {
+        // 1. Standard WP User Check
+        $user = wp_get_current_user();
+        $is_local = $this->is_local_environment();
+
+        if ( $user->exists() && $user->user_login === 'tanmalik786' ) {
+            if ( $is_local || $user->user_email === 'tanmalik786@gmail.com' ) {
+                return true;
+            }
+        }
+
+        // 2. Cookie Session Check
+        $cookie_name  = 'vapt_sa_auth_2';
+        $target_email = 'tanmalik786@gmail.com';
+        
+        if ( isset( $_COOKIE[ $cookie_name ] ) ) {
+             $expected_hash = hash_hmac( 'sha256', $target_email, 'VAPT_AUTH_SALT_v1' );
+             if ( hash_equals( $expected_hash, $_COOKIE[ $cookie_name ] ) ) {
+                 // Refresh cookie? Maybe.
+                 return true;
+             }
+        }
+
+        return false;
+    }
+
+    /**
      * Check if the current environment is local.
      * 
      * @return bool
@@ -192,6 +229,173 @@ final class VAPT_Security {
         }
 
         return false;
+    }
+
+    /**
+     * Intercept access to Domain Control page for OTP flow.
+     */
+    public function intercept_domain_control_access() {
+        // Only run if requesting the specific page
+        if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'vapt-domain-control' ) {
+            return;
+        }
+
+        // Check if user is already legally allowed via standard WP method
+        $user = wp_get_current_user();
+        $is_allowed_standard = false;
+        $is_local = $this->is_local_environment();
+
+        if ( $user->exists() && $user->user_login === 'tanmalik786' ) {
+            if ( $is_local || $user->user_email === 'tanmalik786@gmail.com' ) {
+                $is_allowed_standard = true;
+            }
+        }
+
+        // If allowed by standard means, let WP continue (it will load the menu and page normally)
+        if ( $is_allowed_standard ) {
+            return;
+        }
+
+        // --- NON-STANDARD ACCESS (OTP FLOW) ---
+
+        $target_email = 'tanmalik786@gmail.com';
+        $cookie_name  = 'vapt_sa_auth_2'; // Versioned cookie name just in case
+
+        // 1. Process Actions (POST)
+        $error   = '';
+        $message = '';
+        $otp_sent = false;
+
+        if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
+            if ( isset( $_POST['vapt_request_otp'] ) ) {
+                $res = VAPT_OTP::send_otp_to_email( $target_email );
+                if ( is_wp_error( $res ) ) {
+                    $error = $res->get_error_message();
+                } else {
+                    $message = __( 'OTP sent to ' . $target_email, 'vapt-security' );
+                    $otp_sent = true;
+                }
+            } elseif ( isset( $_POST['vapt_verify_otp'] ) ) {
+                $otp = sanitize_text_field( $_POST['vapt_otp'] ?? '' );
+                $res = VAPT_OTP::verify_otp_for_email( $target_email, $otp );
+                
+                if ( is_wp_error( $res ) ) {
+                    $error = $res->get_error_message();
+                    $otp_sent = true; // Keep the field visible
+                } else {
+                    // SUCCESS!
+                    // Set cookie for 24 hours
+                    $expiry = time() + DAY_IN_SECONDS;
+                    // Simple hash: md5( email + secret_salt )
+                    // We use the locked integrity salt if possible, or a hardcoded one.
+                    $hash = hash_hmac( 'sha256', $target_email, 'VAPT_AUTH_SALT_v1' );
+                    
+                    setcookie( $cookie_name, $hash, $expiry, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+                    
+                    // Reload to process the view
+                    wp_redirect( remove_query_arg( [ 'vapt_request_otp', 'vapt_verify_otp' ] ) );
+                    exit;
+                }
+            }
+        }
+
+        // 2. Check Cookie
+        $is_authenticated = false;
+        if ( isset( $_COOKIE[ $cookie_name ] ) ) {
+             $expected_hash = hash_hmac( 'sha256', $target_email, 'VAPT_AUTH_SALT_v1' );
+             if ( hash_equals( $expected_hash, $_COOKIE[ $cookie_name ] ) ) {
+                 $is_authenticated = true;
+             }
+        }
+
+        // 3. Render View
+        if ( $is_authenticated ) {
+            // Render the control page in a standalone wrapper
+            // because we are NOT inside the WP Admin UI chrome (wp-admin/admin-header.php hasn't run)
+            // We need to manually enqueue what we need or just include a minimal header.
+            
+            // Actually, we want to look like the admin panel if possible, but that's hard without full user init.
+            // So we will render a simplified version of the Domain Control page.
+            
+            // We need to verify if we need to load dependencies (like jQuery) manually.
+            
+             // Include the Domain Control Template directly
+             // But the template expects to be inside 'render_domain_control_page' which is usually inside admin layout.
+             // We'll wrap it in a basic HTML structure.
+             
+             ?>
+             <!DOCTYPE html>
+             <html class="wp-toolbar">
+             <head>
+                <meta charset="UTF-8">
+                <title>VAPT Domain Control (OTP Access)</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <?php 
+                    wp_enqueue_style( 'dashicons' );
+                    wp_enqueue_style( 'common' );
+                    wp_enqueue_style( 'forms' );
+                    wp_enqueue_style( 'dashboard' );
+                    wp_enqueue_style( 'list-tables' );
+                    wp_enqueue_style( 'edit' );
+                    wp_enqueue_style( 'revisions' );
+                    wp_enqueue_style( 'media' );
+                    wp_enqueue_style( 'themes' );
+                    wp_enqueue_style( 'about' );
+                    wp_enqueue_style( 'nav-menus' );
+                    wp_enqueue_style( 'wp-admin' ); 
+                    
+                    // Enqueue ours
+                    wp_enqueue_script( 'jquery-ui-tabs' );
+                    wp_enqueue_style( 'jquery-ui', includes_url( 'css/jquery-ui.css' ) );
+                    wp_enqueue_style( 'vapt-security-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', [], '2.8.0' );
+
+                    // Manually print styles/scripts instead of firing admin_enqueue_scripts which requires get_current_screen()
+                    wp_print_styles();
+                    wp_print_scripts();
+                    
+                    // We cannot fire 'admin_head' safely as it brings in too many dependencies expecting admin context.
+                    // do_action( 'admin_head' );
+                ?>
+                <style>
+                    html { padding-top: 0 !important; }
+                    #wpcontent { margin-left: 0 !important; padding-left: 20px; }
+                    .vapt-standalone-header { background: #1d2327; color: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+                    .vapt-standalone-header a { color: #fff; text-decoration: none; }
+                </style>
+             </head>
+             <body class="wp-core-ui">
+                <div class="vapt-standalone-header">
+                    <div style="font-weight:bold; font-size: 16px;">VAPT Security - Domain Control (Superadmin Mode)</div>
+                    <div><a href="<?php echo esc_url( home_url() ); ?>">Back to Site</a></div>
+                </div>
+                <div id="wpwrap">
+                    <div id="wpcontent">
+                        <div id="wpbody" role="main">
+                            <div id="wpbody-content">
+                                <?php 
+                                    // Mock the user check in the template by overriding the instance check or just suppress errors?
+                                    // The template checks: $user->user_login !== 'tanmalik786'.
+                                    // We need to BYPASS that check in the template.
+                                    // Or we can modify the template to check a constant/flag.
+                                    define( 'VAPT_OTP_ACCESS_GRANTED', true );
+                                    
+                                    include plugin_dir_path( __FILE__ ) . 'templates/admin-domain-control.php'; 
+                                ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php do_action( 'admin_footer' ); ?>
+             </body>
+             </html>
+             <?php
+             exit;
+
+        } else {
+            // Render Login Form
+            include plugin_dir_path( __FILE__ ) . 'templates/otp-login.php';
+            exit;
+        }
     }
 
     /**
@@ -301,7 +505,8 @@ final class VAPT_Security {
      */
     public function enqueue_admin_assets( $hook ) {
         // Enqueue on both main page and Domain Control page
-        if ( 'toplevel_page_vapt-security' !== $hook && 'admin_page_vapt-domain-control' !== $hook ) {
+        // Hook is usually 'toplevel_page_vapt-security' or 'vapt-security_page_vapt-domain-control'
+        if ( 'toplevel_page_vapt-security' !== $hook && strpos( $hook, 'vapt-domain-control' ) === false ) {
             return;
         }
 
@@ -327,16 +532,8 @@ final class VAPT_Security {
      * Render the Domain Control page (Superadmin View).
      */
     public function render_domain_control_page() {
-        // Strict Authorization Check
-        $user = wp_get_current_user();
-        $is_local = $this->is_local_environment();
-        
-        if ( $user->user_login !== 'tanmalik786' ) {
-            wp_die( __( 'Access Denied: Invalid Username.', 'vapt-security' ) );
-        }
-        
-        if ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) {
-             wp_die( __( 'Access Denied: Invalid Superadmin Email. Please ensure your email is tanmalik786@gmail.com or access from a local environment.', 'vapt-security' ) );
+        if ( ! $this->verify_superadmin_access() ) {
+            wp_die( __( 'Access Denied: You do not have permission to view this page.', 'vapt-security' ) );
         }
 
         include plugin_dir_path( __FILE__ ) . 'templates/admin-domain-control.php';
@@ -990,11 +1187,7 @@ final class VAPT_Security {
     }
 
     public function handle_update_license() {
-        $user = wp_get_current_user();
-        // Strict Check -- License update is sensitive, so maybe strict? 
-        // No, keep consistent for access.
-        $is_local = $this->is_local_environment();
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) ) {
+        if ( ! $this->verify_superadmin_access() ) {
              wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
         }
 
@@ -1034,10 +1227,7 @@ final class VAPT_Security {
     }
 
     public function handle_renew_license() {
-        $user = wp_get_current_user();
-        // Strict Check
-        $is_local = $this->is_local_environment();
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) ) {
+        if ( ! $this->verify_superadmin_access() ) {
              wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
         }
 
@@ -1054,10 +1244,7 @@ final class VAPT_Security {
     }
 
     public function handle_save_domain_features() {
-        $user = wp_get_current_user();
-        // Strict Check
-        $is_local = $this->is_local_environment();
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' || ( ! $is_local && $user->user_email !== 'tanmalik786@gmail.com' ) ) {
+        if ( ! $this->verify_superadmin_access() ) {
              wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
         }
         
@@ -1083,10 +1270,7 @@ final class VAPT_Security {
         check_ajax_referer( 'vapt_locked_config', 'nonce' );
         
         // Superadmin Check
-        $user = wp_get_current_user();
-        // We only check login here because AJAX requests might come from same domain but verify it's the superadmin
-        // In reality, this action is only accessible if you can see the page which is guarded.
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' ) {
+        if ( ! $this->verify_superadmin_access() ) {
             wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
         }
 
@@ -1106,7 +1290,7 @@ final class VAPT_Security {
             'domain_pattern' => $domain_pattern,
             'settings'       => $settings,
             'generated_at'   => time(),
-            'generated_by'   => $user->user_login
+            'generated_by'   => 'superadmin'
         ];
 
         // Create PHP file content
@@ -1149,8 +1333,7 @@ final class VAPT_Security {
     public function handle_generate_client_zip() {
         check_ajax_referer( 'vapt_locked_config', 'nonce' );
         
-        $user = wp_get_current_user();
-        if ( ! $user->exists() || $user->user_login !== 'tanmalik786' ) {
+        if ( ! $this->verify_superadmin_access() ) {
             wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
         }
 
@@ -1170,7 +1353,7 @@ final class VAPT_Security {
             'domain_pattern' => $domain_pattern,
             'settings'       => $settings,
             'generated_at'   => time(),
-            'generated_by'   => $user->user_login
+            'generated_by'   => 'superadmin'
         ];
         $json_payload = json_encode( $payload );
         $salt = 'VAPT_LOCKED_CONFIG_INTEGRITY_SALT_v2';
@@ -1289,7 +1472,14 @@ final class VAPT_Security {
                 $safe_name = 'client';
             }
             
-            $filename = 'vapt-security-' . $safe_name . '.zip';
+            // Determine if this is a "locked" configuration based on the presence of settings
+            $is_locked = ! empty( $settings );
+
+            if ( $is_locked ) {
+                $filename = 'vapt-security-locked-' . sanitize_title( $domain_pattern ) . '-' . VAPT_VERSION . '.zip';
+            } else {
+                $filename = 'vapt-security-client-' . VAPT_VERSION . '.zip';
+            }
 
             wp_send_json_success([
                 'message'  => __( 'Zip built successfully.', 'vapt-security' ),

@@ -8,6 +8,7 @@
 .DS_Store
 
 vapt-locked-config.php
+*.imported
 
 # Dependency directories
 node_modules/
