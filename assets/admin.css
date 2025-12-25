@@ -50,17 +50,25 @@
     box-shadow: none;
 }
 
+/* Tab Content Panels */
 .vapt-security-tab-content {
-    display: none;
-    padding: 20px;
-    border: 1px solid #c3c4c7;
-    border-top: none;
+    padding: 30px;
     background-color: #ffffff;
 }
 
-.vapt-security-tab-content.ui-tabs-panel {
+/* Ensure active panels are visible and take up full width in flex layout */
+.vapt-vertical-tabs .ui-tabs-panel {
     display: block;
+    width: 100%;
 }
+
+/* Ensure inactive panels are hidden */
+.vapt-vertical-tabs .ui-tabs-panel[aria-hidden="true"],
+.vapt-vertical-tabs .ui-tabs-panel[style*="display: none"] {
+    display: none !important;
+}
+
+/* Let jQuery UI manage panel visibility via active classes and inline styles */
 
 .vapt-security-tab-content h3 {
     margin-top: 0;
@@ -130,30 +138,6 @@
     margin: 5px 0;
 }
 
-/* Responsive */
-@media screen and (max-width: 782px) {
-    .form-table th,
-    .form-table td {
-        display: block;
-        width: auto;
-        padding: 10px 0;
-    }
-    
-    .form-table th {
-        padding-bottom: 5px;
-    }
-    
-    .form-table td {
-        padding-top: 5px;
-    }
-    
-    .form-table input[type="number"],
-    .form-table input[type="text"],
-    .form-table select {
-        width: 100%;
-    }
-}
-
 /* Dashboard Widget Style */
 .vapt-dashboard-widget {
     padding: 15px 0;
@@ -172,4 +156,169 @@
 
 .vapt-dashboard-widget .statistic-value {
     font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ */
+/* Modern Vertical Tabs Layout (Admin Settings)                       */
+/* ------------------------------------------------------------------ */
+.vapt-vertical-tabs {
+    display: flex;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    margin-top: 20px;
+    min-height: 450px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Scoped to prevent bleeding into nested tabs */
+.vapt-vertical-tabs>.ui-tabs-nav {
+    width: 200px;
+    min-width: 200px;
+    background: #f0f0f1;
+    border: none;
+    border-right: 1px solid #ccd0d4;
+    margin: 0;
+    padding: 0;
+    display: block;
+    flex-shrink: 0;
+}
+
+.vapt-vertical-tabs>.ui-tabs-nav li {
+    float: none;
+    margin: 0;
+    border: none;
+    border-bottom: 1px solid #ccd0d4;
+    background: transparent;
+}
+
+.vapt-vertical-tabs>.ui-tabs-nav li.ui-tabs-active {
+    background: #fff;
+    margin-right: -1px;
+    position: relative;
+    z-index: 2;
+}
+
+.vapt-vertical-tabs>.ui-tabs-nav li a {
+    display: block;
+    padding: 15px 20px;
+    text-decoration: none;
+    color: #2271b1;
+    font-weight: 600;
+    outline: none;
+    box-shadow: none;
+    border: none;
+}
+
+.vapt-vertical-tabs>.ui-tabs-nav li.ui-tabs-active a {
+    color: #1d2327;
+}
+
+/* Fix responsiveness for vertical tabs */
+@media screen and (max-width: 782px) {
+    .vapt-vertical-tabs {
+        display: block;
+    }
+
+    .vapt-vertical-tabs .ui-tabs-nav {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #ccd0d4;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Domain Admin Control Styles                                       */
+/* ------------------------------------------------------------------ */
+.vapt-domain-tabs {
+    margin-top: 20px;
+    border-bottom: 1px solid #c3c4c7;
+}
+
+.vapt-domain-tabs ul {
+    margin: 0;
+    padding: 0;
+}
+
+.vapt-domain-tabs li {
+    display: inline-block;
+    margin: 0;
+    margin-bottom: -1px;
+}
+
+.vapt-domain-tabs a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-bottom: none;
+    color: #2271b1;
+    font-weight: 600;
+}
+
+.vapt-domain-tabs li.ui-tabs-active a {
+    background: #fff;
+    border-color: #c3c4c7;
+    border-bottom-color: #fff;
+    color: #1d2327;
+}
+
+.vapt-domain-tab-content {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    padding: 20px;
+}
+
+/* Feature Grid Styles */
+.vapt-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.vapt-feature-item {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 15px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.vapt-feature-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vapt-feature-item h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Responsive Table Overrides */
+@media screen and (max-width: 782px) {
+
+    .form-table th,
+    .form-table td {
+        display: block;
+        width: auto;
+        padding: 10px 0;
+    }
+
+    .form-table th {
+        padding-bottom: 5px;
+    }
+
+    .form-table td {
+        padding-top: 5px;
+    }
+
+    .form-table input[type="number"],
+    .form-table input[type="text"],
+    .form-table select {
+        width: 100%;
+    }
 }

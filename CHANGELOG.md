@@ -2,6 +2,30 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [3.0.5] - 2025-12-25
+- Feature: Added configurable "Simulation Request Count" to Rate Limiter Diagnostics.
+- Feature: Live updates for Simulation Count when changing Max Requests setting.
+- UX: Reverted Rate Limiter to vertical layout for better usability.
+- Fix: Resolved issue where diagnostic tool used legacy setting key.
+- Fix: Sub-tabs were previously displayed vertically instead of horizontally.
+
+## [3.0.4] - 2025-12-25
+- Feature: Dynamic Admin Tab Layout (Vertical if > 5 tabs, Horizontal if <= 5).
+- Fix: "Active Build" notice restricted to Superadmin only.
+- Fix: "Empty Tabs" issue on Admin Settings page.
+- Tweak: Added time to "Active Build" generated timestamp.
+
+## [3.0.3] - 2025-12-25
+
+### Fixed
+- **Domain Features Persistence**: Enabled features are now correctly preserved when generating and importing locked configuration builds.
+- **UI Feedback**: Improved error handling and success notifications for License Management and Domain Features.
+
+## [3.0.2] - 2025-12-25
+
+### Changed
+- Updated plugin version strings and clarified internal build info.
+
 ## [2.8.0] - 2025-12-23
 
 ### Added

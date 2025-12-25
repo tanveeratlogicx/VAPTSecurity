@@ -1,10 +1,12 @@
 <?php
+
 /**
  * VAPT Feature Manager
  *
  * Manages domain-level features enabled/disabled by the Superadmin.
  */
-class VAPT_Features {
+class VAPT_Features
+{
 
     const OPTION_NAME = 'vapt_domain_features';
 
@@ -14,6 +16,12 @@ class VAPT_Features {
         'input_validation' => true,
         'cron_protection'  => true,
         'security_logging' => true,
+        'disable_xmlrpc'   => false,
+        'disable_user_enum' => false,
+        'disable_file_edit' => false,
+        'hide_wp_version'  => false,
+        'security_headers' => false,
+        'restrict_rest_api' => false,
     ];
 
     /**
@@ -21,7 +29,8 @@ class VAPT_Features {
      *
      * @return array
      */
-    public static function get_defined_features() {
+    public static function get_defined_features()
+    {
         return self::$defined_features;
     }
 
@@ -30,14 +39,15 @@ class VAPT_Features {
      *
      * @return array Map of feature_slug => bool
      */
-    public static function get_active_features() {
-        $stored = get_option( self::OPTION_NAME );
-        if ( ! is_array( $stored ) ) {
+    public static function get_active_features()
+    {
+        $stored = get_option(self::OPTION_NAME);
+        if (! is_array($stored)) {
             // If not set yet, return defaults
             return self::$defined_features;
         }
         // Merge with defaults to ensure all keys exist
-        return array_merge( self::$defined_features, $stored );
+        return array_merge(self::$defined_features, $stored);
     }
 
     /**
@@ -46,9 +56,10 @@ class VAPT_Features {
      * @param string $slug Feature slug.
      * @return bool
      */
-    public static function is_enabled( $slug ) {
+    public static function is_enabled($slug)
+    {
         $active = self::get_active_features();
-        return ! empty( $active[$slug] );
+        return ! empty($active[$slug]);
     }
 
     /**
@@ -57,18 +68,19 @@ class VAPT_Features {
      * @param array $features Map of slug => bool.
      * @return bool
      */
-    public static function update_features( $features ) {
+    public static function update_features($features)
+    {
         $valid = [];
-        foreach ( self::$defined_features as $slug => $default ) {
+        foreach (self::$defined_features as $slug => $default) {
             // logic: if key exists in input, use it (cast to bool), else use false (disabled) if submitting form
             // Or better: trust input map, merge with existing?
             // Let's assume input covers the desired state.
-            if ( isset( $features[$slug] ) ) {
+            if (isset($features[$slug])) {
                 $valid[$slug] = (bool) $features[$slug];
             } else {
                 $valid[$slug] = false;
             }
         }
-        return update_option( self::OPTION_NAME, $valid );
+        return update_option(self::OPTION_NAME, $valid);
     }
 }
