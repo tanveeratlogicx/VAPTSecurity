@@ -16,12 +16,12 @@ class VAPT_Features
         'input_validation' => true,
         'cron_protection'  => true,
         'security_logging' => true,
-        'disable_xmlrpc'   => false,
-        'disable_user_enum' => false,
-        'disable_file_edit' => false,
-        'hide_wp_version'  => false,
-        'security_headers' => false,
-        'restrict_rest_api' => false,
+        'disable_xmlrpc'   => true,
+        'disable_user_enum' => true,
+        'disable_file_edit' => true,
+        'hide_wp_version'  => true,
+        'security_headers' => true,
+        'restrict_rest_api' => true,
     ];
 
     /**
@@ -63,6 +63,25 @@ class VAPT_Features
     }
 
     /**
+     * Sanitize features array.
+     *
+     * @param array $features Raw input.
+     * @return array Sanitized input.
+     */
+    public static function sanitize_features($features)
+    {
+        $valid = [];
+        foreach (self::$defined_features as $slug => $default) {
+            if (isset($features[$slug])) {
+                $valid[$slug] = (bool) $features[$slug];
+            } else {
+                $valid[$slug] = false;
+            }
+        }
+        return $valid;
+    }
+
+    /**
      * Update active features.
      *
      * @param array $features Map of slug => bool.
@@ -70,17 +89,7 @@ class VAPT_Features
      */
     public static function update_features($features)
     {
-        $valid = [];
-        foreach (self::$defined_features as $slug => $default) {
-            // logic: if key exists in input, use it (cast to bool), else use false (disabled) if submitting form
-            // Or better: trust input map, merge with existing?
-            // Let's assume input covers the desired state.
-            if (isset($features[$slug])) {
-                $valid[$slug] = (bool) $features[$slug];
-            } else {
-                $valid[$slug] = false;
-            }
-        }
+        $valid = self::sanitize_features($features);
         return update_option(self::OPTION_NAME, $valid);
     }
 }

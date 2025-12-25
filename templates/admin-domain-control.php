@@ -10,6 +10,15 @@ $is_verified = (get_transient('vapt_auth_' . $user_id)) || (defined('VAPT_OTP_AC
 
 // License Data
 $license = VAPT_License::get_license();
+if (!$license) {
+    VAPT_License::activate_license(); // Try to init
+    $license = VAPT_License::get_license();
+}
+// Fallback if still false (should not happen after activate)
+if (!$license) {
+    $license = ['type' => 'standard', 'expires' => 0, 'auto_renew' => false];
+}
+
 $license_type = $license['type'] ?? 'standard';
 $license_expires = $license['expires'] ?? 0;
 $license_auto_renew = $license['auto_renew'] ?? false;

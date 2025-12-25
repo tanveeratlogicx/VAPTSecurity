@@ -2,6 +2,16 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [3.0.6] - 2025-12-25
+- Feature: Added independent "Admin Hardening Toggles" allowing admins to control authorized hardening features.
+- Feature: Added detailed "Server Hardening" descriptions and fully qualified verification URLs.
+- UX: Updated "Server Hardening" tab to use a responsive 4-column grid layout with toggle switches.
+- Fix: Fixed critical memory exhaustion issue caused by infinite recursion in `vapt_domain_features` saving logic.
+- Fix: Resolved "Blank Page" issues by adding graceful handling for uninitialized licenses and settings.
+- Refactor: separated "Domain Authorization" (Superadmin) from "Feature Activation" (Admin).
+- Refactor: Improved `VAPT_Features` class with dedicated `sanitize_features` method to prevent data corruption.
+- Tweak: Added self-healing logic to automatically recover from corrupted settings states.
+
 ## [3.0.5] - 2025-12-25
 - Feature: Added configurable "Simulation Request Count" to Rate Limiter Diagnostics.
 - Feature: Live updates for Simulation Count when changing Max Requests setting.

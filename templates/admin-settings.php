@@ -71,14 +71,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
             $active_tabs++;
         }
 
-        // WP-Cron Protection (distinct from General?)
-        if (
-            VAPT_Features::is_enabled("cron_protection") &&
-            defined("VAPT_FEATURE_WP_CRON_PROTECTION") &&
-            VAPT_FEATURE_WP_CRON_PROTECTION
-        ) {
-            $active_tabs++;
-        }
+
 
         // Security Logging
         if (
@@ -88,6 +81,49 @@ $is_superadmin = VAPT_Security::is_superadmin();
         ) {
             $active_tabs++;
         }
+
+        // Hardening Features (Grouped)
+        $hardening_features = [
+            'disable_xmlrpc' => [
+                'label' => __('XML-RPC Protection', 'vapt-security'),
+                'desc' => __('Disables the XML-RPC API, which is often used for DDoS and brute force attacks.', 'vapt-security'),
+                'note' => sprintf(__('Test: Visit %s. You should see "Forbidden" or a 403 error.', 'vapt-security'), '<a href="' . esc_url(site_url('/xmlrpc.php')) . '" target="_blank"><code>' . esc_html(site_url('/xmlrpc.php')) . '</code></a>'),
+                'icon' => 'dashicons-shield',
+            ],
+            'disable_user_enum' => [
+                'label' => __('User Enumeration Protection', 'vapt-security'),
+                'desc' => __('Prevents attackers from scanning for valid usernames using author archives.', 'vapt-security'),
+                'note' => sprintf(__('Test: Access %s. It should redirect to home or show 403.', 'vapt-security'), '<a href="' . esc_url(site_url('/?author=1')) . '" target="_blank"><code>' . esc_html(site_url('/?author=1')) . '</code></a>'),
+                'icon' => 'dashicons-admin-users',
+            ],
+            'disable_file_edit' => [
+                'label' => __('File Editor Disabled', 'vapt-security'),
+                'desc' => __('Disables the built-in file editor for themes and plugins to prevent code injection if compromised.', 'vapt-security'),
+                'note' => __('Test: Check Appearance > Theme File Editor. The menu should be missing.', 'vapt-security'),
+                'icon' => 'dashicons-edit',
+            ],
+            'hide_wp_version' => [
+                'label' => __('Hide WP Version', 'vapt-security'),
+                'desc' => __('Hides the WordPress version number from the page source to prevent targeted exploits.', 'vapt-security'),
+                'note' => __('Test: View Page Source and search for "generator". The WP version should not be visible.', 'vapt-security'),
+                'icon' => 'dashicons-hidden',
+            ],
+            'security_headers' => [
+                'label' => __('Security Headers', 'vapt-security'),
+                'desc' => __('Adds strictly configured HTTP security headers (HSTS, X-Frame-Options, etc.).', 'vapt-security'),
+                'note' => __('Test: Check HTTP headers in browser dev tools. Look for X-Frame-Options: SAMEORIGIN.', 'vapt-security'),
+                'icon' => 'dashicons-admin-network',
+            ],
+            'restrict_rest_api' => [
+                'label' => __('REST API Restriction', 'vapt-security'),
+                'desc' => __('Restricts REST API access to authenticated users only.', 'vapt-security'),
+                'note' => sprintf(__('Test: Visit %s while logged out. It should return 401 Unauthorized.', 'vapt-security'), '<a href="' . esc_url(site_url('/wp-json/wp/v2/users')) . '" target="_blank"><code>' . esc_html(site_url('/wp-json/wp/v2/users')) . '</code></a>'),
+                'icon' => 'dashicons-lock',
+            ],
+        ];
+
+        // Always show the tab now that it's toggleable
+        $active_tabs++;
 
         // Dynamic Layout Decision
         // If <= 5, use Horizontal (default/legacy structure, or generic class)
@@ -107,7 +143,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
                     VAPT_FEATURE_WP_CRON_PROTECTION
                 ): ?>
                     <li class="vapt-security-tab"><a href="#tab-general"><?php esc_html_e(
-                                                                                "General",
+                                                                                "WP-Cron Protection",
                                                                                 "vapt-security",
                                                                             ); ?></a></li>
                 <?php endif; ?>
@@ -131,16 +167,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
                                                                                 "vapt-security",
                                                                             ); ?></a></li>
                 <?php endif; ?>
-                <?php if (
-                    VAPT_Features::is_enabled("cron_protection") &&
-                    defined("VAPT_FEATURE_WP_CRON_PROTECTION") &&
-                    VAPT_FEATURE_WP_CRON_PROTECTION
-                ): ?>
-                    <li class="vapt-security-tab"><a href="#tab-cron"><?php esc_html_e(
-                                                                            "WP‑Cron Protection",
-                                                                            "vapt-security",
-                                                                        ); ?></a></li>
-                <?php endif; ?>
+
                 <?php if (
                     VAPT_Features::is_enabled("security_logging") &&
                     defined("VAPT_FEATURE_SECURITY_LOGGING") &&
@@ -148,6 +175,12 @@ $is_superadmin = VAPT_Security::is_superadmin();
                 ): ?>
                     <li class="vapt-security-tab"><a href="#tab-logging"><?php esc_html_e(
                                                                                 "Security Logging",
+                                                                                "vapt-security",
+                                                                            ); ?></a></li>
+                <?php endif; ?>
+                <?php if (!empty($hardening_features)): ?>
+                    <li class="vapt-security-tab"><a href="#tab-hardening"><?php esc_html_e(
+                                                                                "Hardening",
                                                                                 "vapt-security",
                                                                             ); ?></a></li>
                 <?php endif; ?>
@@ -165,8 +198,18 @@ $is_superadmin = VAPT_Security::is_superadmin();
             ): ?>
                 <div id="tab-general" class="vapt-security-tab-content">
                     <div class="settings-section">
-                        <h2>General Settings</h2>
                         <?php do_settings_sections("vapt_security_general"); ?>
+
+                        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
+
+                        <?php do_settings_sections("vapt_security_cron"); ?>
+
+                        <div class="vapt-server-cron-info" style="background: #fff; padding: 20px; border: 1px solid #ccd0d4; border-left: 4px solid #72aee6; margin-top: 25px;">
+                            <h3 style="margin-top: 0;"><?php esc_html_e("Server Level Custom Cron", "vapt-security"); ?></h3>
+                            <p><?php esc_html_e("To ensure robust performance and reliability, we recommend disabling WP-Cron and setting up a real server-level cron job.", "vapt-security"); ?></p>
+                            <p><strong><?php esc_html_e("Example Command (runs every 30 minutes):", "vapt-security"); ?></strong></p>
+                            <code style="display: block; padding: 15px; background: #f0f0f1; border-radius: 4px; font-family: monospace;">*/30 * * * * wget -q -O - <?php echo esc_url(site_url("wp-cron.php?doing_wp_cron")); ?> >/dev/null 2>&1</code>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -290,17 +333,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
                 </div>
             <?php endif; ?>
 
-            <?php if (
-                VAPT_Features::is_enabled("cron_protection") &&
-                defined("VAPT_FEATURE_WP_CRON_PROTECTION") &&
-                VAPT_FEATURE_WP_CRON_PROTECTION
-            ): ?>
-                <div id="tab-cron" class="vapt-security-tab-content">
-                    <div class="settings-section">
-                        <?php do_settings_sections("vapt_security_cron"); ?>
-                    </div>
-                </div>
-            <?php endif; ?>
+
 
             <?php if (
                 VAPT_Features::is_enabled("security_logging") &&
@@ -412,6 +445,56 @@ $is_superadmin = VAPT_Security::is_superadmin();
                                 </tbody>
                             </table>
                         <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($hardening_features)): ?>
+                <div id="tab-hardening" class="vapt-security-tab-content">
+                    <h2><?php esc_html_e("Server Hardening", "vapt-security"); ?></h2>
+                    <p><?php esc_html_e("Enable these hardening features to secure your WordPress installation against common attacks.", "vapt-security"); ?></p>
+
+                    <div class="vapt-hardening-grid">
+                        <?php
+                        // Domain Features (Availability Control by Superadmin)
+                        $domain_features = VAPT_Features::get_active_features();
+
+                        // Admin Settings (Activation Control by Admin)
+                        $admin_settings = get_option('vapt_hardening_settings', []);
+
+                        foreach ($hardening_features as $slug => $data):
+                            // 1. Availability Check: Is this feature allowed for the domain?
+                            $is_allowed = !empty($domain_features[$slug]);
+                            if (!$is_allowed) {
+                                continue; // Skip rendering if not allowed by Superadmin
+                            }
+
+                            // 2. Activation Check: Has the Admin enabled it?
+                            // Default to OFF unless specifically enabled, or maybe default to ON if allowed?
+                            // Better default: If it was previously "Active" in the old system, it might need migration.
+                            // For now, default to 0 (disabled) until Admin checks it, or check if it matches legacy state?
+                            // Legacy state was just "is_allowed". Let's stick to explicit admin toggle.
+                            $is_active = !empty($admin_settings[$slug]);
+                        ?>
+                            <div class="vapt-hardening-card <?php echo $is_active ? 'active' : ''; ?>">
+                                <span class="dashicons <?php echo esc_attr($data['icon']); ?>"></span>
+                                <h4><?php echo esc_html($data['label']); ?></h4>
+
+                                <label class="vapt-toggle-switch">
+                                    <input type="checkbox" name="vapt_hardening_settings[<?php echo esc_attr($slug); ?>]" value="1" <?php checked($is_active); ?>>
+                                    <span class="vapt-toggle-slider"></span>
+                                </label>
+
+                                <div class="vapt-hardening-desc">
+                                    <?php echo esc_html($data['desc']); ?>
+                                </div>
+
+                                <div class="vapt-hardening-note">
+                                    <strong><?php esc_html_e('Validation:', 'vapt-security'); ?></strong>
+                                    <?php echo wp_kses_post($data['note']); ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             <?php endif; ?>

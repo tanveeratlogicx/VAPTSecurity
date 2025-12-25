@@ -14,7 +14,7 @@
  */
 
 if (!defined("VAPT_VERSION")) {
-    define("VAPT_VERSION", "3.0.5");
+    define("VAPT_VERSION", "3.0.6");
 }
 
 // If this file is called directly, abort.
@@ -1024,6 +1024,25 @@ final class VAPT_Security
             );
         }
 
+        // Register Domain Features (Hardening Toggles)
+        // Sanitization callback ensures boolean values and structural integrity
+        register_setting(
+            "vapt_security_options_group",
+            "vapt_domain_features",
+            [
+                "sanitize_callback" => ["VAPT_Features", "sanitize_features"]
+            ]
+        );
+
+        // Register Admin Hardening Settings (Activation Toggles)
+        register_setting(
+            "vapt_security_options_group",
+            "vapt_hardening_settings",
+            [
+                "sanitize_callback" => [$this, "sanitize_hardening_settings"]
+            ]
+        );
+
         /* ------------------------------------------------------------------ */
         /* Rate Limiter tab                                                  */
         /* ------------------------------------------------------------------ */
@@ -1361,6 +1380,26 @@ final class VAPT_Security
         // Encrypt the data before saving
         $json = json_encode($sanitized);
         return VAPT_Encryption::encrypt($json);
+    }
+
+    public function sanitize_hardening_settings($input)
+    {
+        // Simple array of booleans expected.
+        // We trust the structure but cast values to 0/1 for safety.
+        $sanitized = [];
+        if (is_array($input)) {
+            foreach ($input as $key => $val) {
+                $sanitized[sanitize_key($key)] = $val ? 1 : 0;
+            }
+        }
+        // Encrypt? No, these are just toggles. Domain features weren't encrypted either in register_settings context directly (unless handled by callback).
+        // Actually, existing options use VAPT_Encryption::encrypt($json).
+        // For simplicity and consistency with recent 'vapt_domain_features', we can store as plain array or follow the pattern.
+        // The pattern for 'vapt_security_options' is encrypted JSON.
+        // 'vapt_domain_features' uses 'update_features' which likely does get/update_option directly?
+        // Let's check VAPT_Features::update_features. It uses update_option directly.
+        // So this separate option 'vapt_hardening_settings' can also be a direct array.
+        return $sanitized;
     }
 
     /* ------------------------------------------------------------------ */

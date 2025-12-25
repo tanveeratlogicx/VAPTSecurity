@@ -10,19 +10,27 @@ class VAPT_Security_Features
 
     public static function init()
     {
+        // Admin Settings (Activation Control)
+        $admin_settings = get_option('vapt_hardening_settings', []);
+
+        // Helper check: Feature must be allowed by Domain AND enabled by Admin
+        $is_active = function ($slug) use ($admin_settings) {
+            return VAPT_Features::is_enabled($slug) && !empty($admin_settings[$slug]);
+        };
+
         // XML-RPC
-        if (VAPT_Features::is_enabled('disable_xmlrpc')) {
+        if ($is_active('disable_xmlrpc')) {
             add_filter('xmlrpc_enabled', '__return_false');
             add_filter('wp_headers', [__CLASS__, 'remove_pingback_header']);
         }
 
         // User Enumeration
-        if (VAPT_Features::is_enabled('disable_user_enum')) {
+        if ($is_active('disable_user_enum')) {
             add_action('request', [__CLASS__, 'block_user_enumeration']);
         }
 
         // Disable File Edit
-        if (VAPT_Features::is_enabled('disable_file_edit')) {
+        if ($is_active('disable_file_edit')) {
             // DISALLOW_FILE_EDIT is a constant, best defined in wp-config.
             // Plugins cannot easily force this if it's not defined, 
             // but we can filter the capabilities or mapping.
@@ -30,18 +38,18 @@ class VAPT_Security_Features
         }
 
         // Hide WP Version
-        if (VAPT_Features::is_enabled('hide_wp_version')) {
+        if ($is_active('hide_wp_version')) {
             remove_action('wp_head', 'wp_generator');
             add_filter('the_generator', '__return_empty_string');
         }
 
         // Security Headers
-        if (VAPT_Features::is_enabled('security_headers')) {
+        if ($is_active('security_headers')) {
             add_action('send_headers', [__CLASS__, 'add_security_headers']);
         }
 
         // User REST API
-        if (VAPT_Features::is_enabled('restrict_rest_api')) {
+        if ($is_active('restrict_rest_api')) {
             add_filter('rest_authentication_errors', [__CLASS__, 'restrict_rest_api_access']);
         }
     }
