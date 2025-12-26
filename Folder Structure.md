@@ -42,8 +42,8 @@ VAPTSecurity/
 ├── CHANGELOG.md             # History of changes and updates
 ├── DOCUMENTATION.md         # General documentation
 ├── FEATURES.md              # Detailed list of plugin features
+├── Folder Structure.md      # This file
 ├── LICENSE
-├── Project Layout.me
 ├── README.md                # GitHub Readme
 ├── README.txt               # WordPress Plugin Repo Readme
 ├── SUPERADMIN_GUIDE.md      # Guide for Superadmin functions
@@ -54,10 +54,11 @@ VAPTSecurity/
 ├── package.json             # NPM dependencies
 ├── prompt.txt
 ├── test-config.php
+├── test-integrations-mock.php # Mock tests for form integrations
 ├── test-vapt-features.php
 ├── uninstall.php            # Uninstallation logic
 ├── vapt-config-sample.php   # Sample configuration file
 ├── vapt-config.php          # Active configuration file
 ├── vapt-locked-config.php   # Locked domain configuration
-└── vapt-security.php        # Main plugin file
+└── vapt-security.php        # Main plugin file (v4.0.0)
 ```

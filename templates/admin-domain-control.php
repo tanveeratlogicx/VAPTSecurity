@@ -232,6 +232,20 @@ $vapt_version = defined('VAPT_VERSION') ? VAPT_VERSION : '2.x';
                         </td>
                     </tr>
                     <tr>
+                        <th scope="row"><?php esc_html_e('Custom Plugin Name', 'vapt-security'); ?></th>
+                        <td>
+                            <input type="text" id="vapt-build-plugin-name" class="regular-text" placeholder="VAPT Security">
+                            <p class="description"><?php esc_html_e('Leave empty to use default. Changes the "Plugin Name" header in the built zip.', 'vapt-security'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e('Custom Author Name', 'vapt-security'); ?></th>
+                        <td>
+                            <input type="text" id="vapt-build-author-name" class="regular-text" placeholder="Tanveer Malik">
+                            <p class="description"><?php esc_html_e('Leave empty to use default. Changes the "Author" header in the built zip.', 'vapt-security'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
                         <th></th>
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -486,6 +500,8 @@ $vapt_version = defined('VAPT_VERSION') ? VAPT_VERSION : '2.x';
             $.post(ajaxurl, {
                 action: 'vapt_generate_client_zip',
                 domain: $('#vapt-lock-domain').val(),
+                plugin_name: $('#vapt-build-plugin-name').val(),
+                author_name: $('#vapt-build-author-name').val(),
                 include_settings: $('#vapt-lock-include-settings').is(':checked') ? 1 : 0,
                 nonce: '<?php echo wp_create_nonce("vapt_locked_config"); ?>'
             }, function(r) {

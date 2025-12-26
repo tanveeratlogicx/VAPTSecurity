@@ -42,12 +42,21 @@ Comprehensive event tracking and analysis:
 - **IP Analysis**: Identification of problematic IP addresses
 - **Retention Policy**: Automatic cleanup of old log data
 
+### 5. Domain Control (Superadmin)
+
+Foundational controls for management and distribution:
+
+- **Build Generator**: Securely package client versions of the plugin.
+- **White-labeling**: Dynamic rebranding of plugin and author names.
+- **Domain Locking**: Enforce plugin authorization via signed config files.
+- **OTP Access**: Secure, passwordless Superadmin login system.
+
 ## Installation
 
 ### Prerequisites
 
-- WordPress 5.0 or higher
-- PHP 7.2.24 or higher
+- WordPress 6.0 or higher
+- PHP 8.0 or higher
 - MySQL 5.5.5 or higher
 
 ### Installation Steps

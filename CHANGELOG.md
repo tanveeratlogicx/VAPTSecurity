@@ -2,6 +2,21 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [4.0.0] - 2025-12-26
+- **Major Release**: Version bumped to 4.0.0.
+- **Tweak**: Removed home page Test URL from General Settings for a cleaner interface.
+
+## [3.5.1] - 2025-12-26
+- **Feature**: Enhanced Build Generator with "Plugin Name" and "Author Name" white-labeling. 
+- **Build**: Automatically sets Plugin URI and Author URI to `#` in generated client builds.
+- **Build**: Refined Zip exclusions; now excludes all compressed files and all Markdown files except `USER_GUIDE.md`.
+- **UI**: Hardening tab now automatically hides if no features are authorized for the domain.
+- **Improved**: Robust regex for header modification to prevent file corruption in generated builds.
+
+## [3.5.0] - 2025-12-26
+- **Version**: Major version bump to 3.5.
+- **Feature**: Integrated white-labeling support for client deliveries.
+
 ## [3.0.8] - 2025-12-26
 - **Feature**: Enhanced Test Form with "Sanitization Level" override dropdown (Basic, Standard, Strict) for immediate verification.
 - **Feature**: Added "Server Received Data" modal to Test Form for clear feedback on sanitized inputs.

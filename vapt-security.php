@@ -4,17 +4,19 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     3.0.8
+ * Version:     4.0.0
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Requires at least: 6.0
+ * Requires PHP:      8.0
  *
  * @package VAPT_Security
  */
 
 if (!defined("VAPT_VERSION")) {
-    define("VAPT_VERSION", "3.0.8");
+    define("VAPT_VERSION", "4.0.0");
 }
 
 // If this file is called directly, abort.
@@ -1243,15 +1245,6 @@ final class VAPT_Security
                                 "vapt-security",
                             ) .
                             "</p>";
-                    }
-                    if (VAPT_SHOW_TEST_URLS) {
-                        echo "<p><strong>" .
-                            esc_html__("Test URL:", "vapt-security") .
-                            '</strong> <a href="' .
-                            esc_url(home_url("/")) .
-                            '" target="_blank">' .
-                            esc_url(home_url("/")) .
-                            "</a></p>";
                     }
                 },
                 "vapt_security_general",
@@ -2493,12 +2486,15 @@ $vapt_locked_config_sig = '{$signature}';
         }
         $include_settings = !empty($_POST["include_settings"]);
         $settings = $include_settings ? $this->get_config() : [];
+        $custom_plugin_name = sanitize_text_field($_POST['plugin_name'] ?? '');
+        $custom_author_name = sanitize_text_field($_POST['author_name'] ?? '');
 
         $payload = [
             "domain_pattern" => $domain_pattern,
             "settings" => $settings,
             "generated_at" => time(),
             "generated_by" => "superadmin",
+            "version"      => "1.0.0"
         ];
         $json_payload = json_encode($payload);
         $salt = "VAPT_LOCKED_CONFIG_INTEGRITY_SALT_v2";
@@ -2613,12 +2609,84 @@ $vapt_locked_config_sig = '{$signature}';
                 continue;
             }
 
+            // Extension Check (Exclude compressed files and markdown EXCEPT USER_GUIDE.md)
+            $ext = strtolower(pathinfo($relative_path, PATHINFO_EXTENSION));
+            $excluded_extensions = ['zip', 'tar', 'gz', 'rar', '7z'];
+            if (in_array($ext, $excluded_extensions)) {
+                continue;
+            }
+            if ($ext === 'md' && $relative_path !== 'USER_GUIDE.md') {
+                continue;
+            }
+
             // Don't include existing locked config if one somehow exists in dev
             if ($relative_path === "vapt-locked-config.php") {
                 continue;
             }
 
-            $zip->addFile($file->getRealPath(), $folder . "/" . $relative_path);
+            // HEADER MODIFICATION FOR vapt-security.php
+            if ($relative_path === 'vapt-security.php') {
+                $content = file_get_contents($file->getRealPath());
+
+                // Replace Plugin Name if provided
+                if (!empty($custom_plugin_name)) {
+                    $content = preg_replace(
+                        '/^([ \t]*\*[ \t]*Plugin Name:[ \t]*).*$/m',
+                        '$1' . $custom_plugin_name,
+                        $content
+                    );
+                }
+
+                // Replace Author Name if provided
+                if (!empty($custom_author_name)) {
+                    $content = preg_replace(
+                        '/^([ \t]*\*[ \t]*Author:[ \t]*).*$/m',
+                        '$1' . $custom_author_name,
+                        $content
+                    );
+                }
+
+                // Force Version to 1.0.0
+                $content = preg_replace(
+                    '/^([ \t]*\*[ \t]*Version:[ \t]*).*$/m',
+                    '${1}1.0.0',
+                    $content
+                );
+
+                // Force URIs to #
+                $content = preg_replace(
+                    '/^([ \t]*\*[ \t]*Plugin URI:[ \t]*).*$/m',
+                    '$1#',
+                    $content
+                );
+                $content = preg_replace(
+                    '/^([ \t]*\*[ \t]*Author URI:[ \t]*).*$/m',
+                    '$1#',
+                    $content
+                );
+
+                // Force Requires Headers
+                $content = preg_replace(
+                    '/^([ \t]*\*[ \t]*Requires at least:[ \t]*).*$/m',
+                    '$16.0',
+                    $content
+                );
+                $content = preg_replace(
+                    '/^([ \t]*\*[ \t]*Requires PHP:[ \t]*).*$/m',
+                    '$18.0',
+                    $content
+                );
+
+                $content = preg_replace(
+                    '/define\(\"VAPT_VERSION\",\s*\".*?\"\);/',
+                    'define("VAPT_VERSION", "1.0.0");',
+                    $content
+                );
+
+                $zip->addFromString($folder . "/" . $relative_path, $content);
+            } else {
+                $zip->addFile($file->getRealPath(), $folder . "/" . $relative_path);
+            }
         }
 
         $zip->close();

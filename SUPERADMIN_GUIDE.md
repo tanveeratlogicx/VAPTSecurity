@@ -1,4 +1,4 @@
-# VAPT Security - Superadmin Guide
+# VAPT Security - Superadmin Guide (v4.0.0)
 
 **CONFIDENTIAL** - Do not distribute to clients.
 

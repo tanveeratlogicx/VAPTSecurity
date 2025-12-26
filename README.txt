@@ -1,9 +1,9 @@
 === VAPT Security ===
 Contributors: tanveeratlogicx
 Tags: security, vapt, dos protection, input validation, rate limiting
-Requires at least: 5.0
-Tested up to: 6.4
-Stable tag: 2.7.1
+Requires at least: 6.0
+Tested up to: 6.7
+Stable tag: 4.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -117,6 +117,27 @@ Yes, you can create a `vapt-config.php` file in your WordPress root directory to
 
 == Changelog ==
  
+= 4.0.0 =
+* Major Release: Version bumped to 4.0.0.
+* Tweak: Removed home page Test URL from General Settings for a cleaner interface.
+
+= 3.5.1 =
+* Feature: Enhanced Build Generator with "Plugin Name" and "Author Name" white-labeling. 
+* Build: Automatically sets Plugin URI and Author URI to # in generated client builds.
+* Build: Refined Zip exclusions; now excludes all compressed files and all Markdown files except USER_GUIDE.md.
+* UI: Hardening tab now automatically hides if no features are authorized for the domain.
+* Improved: Robust regex for header modification to prevent file corruption in generated builds.
+
+= 3.5.0 =
+* Version: Major version bump to 3.5.
+* Feature: Integrated white-labeling support for client deliveries.
+
+= 3.0.8 =
+* Feature: Enhanced Test Form with Sanitization Level override dropdown.
+* Feature: Added "Server Received Data" modal to Test Form.
+* Fix: Critical fix in VAPT_Input_Validator integration.
+* UI: Removed duplicate section headings in Input Validation tab.
+
 = 2.1.0 =
 * Added Domain Locked Configuration Generator
 * Exposed Domain Control page as conditional submenu for Superadmin

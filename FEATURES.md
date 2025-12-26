@@ -7,8 +7,10 @@ This document provides detailed information about each feature of the VAPT Secur
 2. [Rate Limiting on Form Submission](#rate-limiting-on-form-submission)
 3. [Input Validation](#input-validation)
 4. [Security Logging](#security-logging)
-5. [Testing the Features](#testing-the-features)
-6. [Configuration File](#configuration-file)
+5. [Server Hardening](#server-hardening)
+6. [Domain Control (Superadmin)](#domain-control-superadmin)
+7. [Testing the Features](#testing-the-features)
+8. [Configuration File](#configuration-file)
 
 ## WP-Cron Protection
 
@@ -108,6 +110,31 @@ Maintains detailed logs of security events for monitoring and analysis.
 1. Perform various actions that trigger security events
 2. Check the Security Logging tab to see recorded events
 3. Review the Statistics dashboard for event analysis
+
+## Server Hardening
+
+### Feature Description
+Provides a suite of one-click hardening toggles to secure WordPress at the server and application level.
+
+### Modules
+- **XML-RPC Protection**: Disables the XML-RPC API.
+- **User Enumeration Protection**: Prevents scanning for valid usernames.
+- **File Editor Disabled**: Disables the built-in theme/plugin editor.
+- **Hide WP Version**: Removes version information from public source code.
+- **Security Headers**: Adds HSTS, X-Frame-Options, and more.
+- **REST API Restriction**: Limits REST access to authenticated users.
+
+## Domain Control (Superadmin)
+
+### Feature Description
+A centralized management interface for the Superadmin to control plugin behavior across different client domains.
+
+### Capabilities
+- **Build Generator**: Create customized plugin ZIP files for clients.
+- **White-labeling**: Specify custom Plugin Name and Author Name for generated builds.
+- **Domain Locking**: Enforce plugin usage on a specific domain pattern.
+- **License Management**: Track and manage client licenses and renewals.
+- **OTP Verification**: Secure, passwordless access for the Superadmin.
 
 ## Testing the Features
 

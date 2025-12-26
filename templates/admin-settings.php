@@ -122,8 +122,19 @@ $is_superadmin = VAPT_Security::is_superadmin();
             ],
         ];
 
-        // Always show the tab now that it's toggleable
-        $active_tabs++;
+        // Filter Hardening features by availability
+        $domain_features = VAPT_Features::get_active_features();
+        $allowed_hardening_features = [];
+        foreach ($hardening_features as $slug => $data) {
+            if (!empty($domain_features[$slug])) {
+                $allowed_hardening_features[$slug] = $data;
+            }
+        }
+        $hardening_features = $allowed_hardening_features;
+
+        if (!empty($hardening_features)) {
+            $active_tabs++;
+        }
 
         // Dynamic Layout Decision
         // If <= 5, use Horizontal (default/legacy structure, or generic class)
@@ -359,9 +370,6 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
                     <div class="vapt-hardening-grid">
                         <?php
-                        // Domain Features (Availability Control by Superadmin)
-                        $domain_features = VAPT_Features::get_active_features();
-
                         // Admin Settings (Activation Control by Admin)
                         $admin_settings = get_option('vapt_hardening_settings', []);
                         if (!is_array($admin_settings)) {
@@ -369,17 +377,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
                         }
 
                         foreach ($hardening_features as $slug => $data):
-                            // 1. Availability Check: Is this feature allowed for the domain?
-                            $is_allowed = !empty($domain_features[$slug]);
-                            if (!$is_allowed) {
-                                continue; // Skip rendering if not allowed by Superadmin
-                            }
-
                             // 2. Activation Check: Has the Admin enabled it?
-                            // Default to OFF unless specifically enabled, or maybe default to ON if allowed?
-                            // Better default: If it was previously "Active" in the old system, it might need migration.
-                            // For now, default to 0 (disabled) until Admin checks it, or check if it matches legacy state?
-                            // Legacy state was just "is_allowed". Let's stick to explicit admin toggle.
                             $is_active = !empty($admin_settings[$slug]);
                         ?>
                             <div class="vapt-hardening-card <?php echo $is_active ? 'active' : ''; ?>">

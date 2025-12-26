@@ -113,6 +113,27 @@ graph TD
 - Automatic cleanup of old logs
 - IP-based event tracking
 
+### 5. Domain Control (Superadmin Layer)
+
+The foundational layer for distribution and license management:
+
+```mermaid
+graph TD
+    A[Superadmin Action] --> B{Access Method}
+    B -- OTP Verified --> C[Domain Control UI]
+    B -- Logged In --> C
+    C --> D[Build Generator]
+    C --> E[License Manager]
+    D --> F[Dynamic Header Modification]
+    F --> G[Zip Packaging]
+```
+
+#### Key Features:
+- **Build Generator**: On-the-fly customization of plugin headers and settings.
+- **Domain Locking**: Automated injection of `vapt-locked-config.php` into builds.
+- **White-labeling Engine**: Safely re-brands the plugin for specific clients.
+- **License Engine**: Manages validity and auto-renewal counts.
+
 ## Data Flow
 
 ### Request Processing Flow
