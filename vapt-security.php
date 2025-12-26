@@ -4,7 +4,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     3.0.7
+ * Version:     3.0.8
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -14,7 +14,7 @@
  */
 
 if (!defined("VAPT_VERSION")) {
-    define("VAPT_VERSION", "3.0.6");
+    define("VAPT_VERSION", "3.0.8");
 }
 
 // If this file is called directly, abort.
@@ -800,14 +800,33 @@ final class VAPT_Security
     public function render_test_form_page()
     {
         $uri = $_SERVER["REQUEST_URI"] ?? "";
-        if (strpos($uri, "/test-form/") !== false) { ?>
+        if (strpos($uri, "/test-form/") !== false) {
+            // Check for Native Toggle or Default CF7
+            $show_native = isset($_GET['native']) || !defined('WPCF7_VERSION');
+            $cf7_form = null;
+
+            if (!$show_native && defined('WPCF7_VERSION')) {
+                // Try to find a CF7 form
+                $forms = get_posts([
+                    'post_type' => 'wpcf7_contact_form',
+                    'posts_per_page' => 1,
+                    'orderby' => 'date',
+                    'order' => 'DESC'
+                ]);
+                if (!empty($forms)) {
+                    $cf7_form = $forms[0];
+                } else {
+                    $show_native = true; // Fallback if no form found
+                }
+            }
+        ?>
             <!DOCTYPE html>
             <html <?php language_attributes(); ?>>
 
             <head>
                 <meta charset="<?php bloginfo("charset"); ?>">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>VAPT Security - Native Test Form</title>
+                <title>VAPT Security - <?php echo $cf7_form ? 'Contact Form 7 Test' : 'Native Test Form'; ?></title>
                 <style>
                     body {
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -815,7 +834,8 @@ final class VAPT_Security
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        height: 100vh;
+                        min-height: 100vh;
+                        padding: 20px;
                         margin: 0;
                     }
 
@@ -825,13 +845,16 @@ final class VAPT_Security
                         border-radius: 8px;
                         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                         width: 100%;
-                        max-width: 400px;
+                        max-width: <?php echo $cf7_form ? '600px' : '500px'; ?>;
+                        position: relative;
+                        z-index: 1;
                     }
 
                     h1 {
                         margin-top: 0;
                         font-size: 1.5rem;
                         color: #1d2327;
+                        margin-bottom: 0.5rem;
                     }
 
                     .form-group {
@@ -845,31 +868,163 @@ final class VAPT_Security
                         font-size: 0.9rem;
                     }
 
-                    input,
-                    textarea {
+                    input[type="text"],
+                    input[type="email"],
+                    textarea,
+                    select {
                         width: 100%;
                         padding: 0.5rem;
                         border: 1px solid #ccc;
                         border-radius: 4px;
                         box-sizing: border-box;
-                    }
-
-                    button {
-                        background: #2271b1;
-                        color: #fff;
-                        border: none;
-                        padding: 0.6rem 1rem;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        width: 100%;
                         font-size: 1rem;
                     }
 
-                    button:hover {
+                    textarea {
+                        min-height: 100px;
+                        resize: vertical;
+                    }
+
+                    .row {
+                        display: flex;
+                        gap: 15px;
+                    }
+
+                    .col {
+                        flex: 1;
+                    }
+
+                    .btn-group {
+                        display: flex;
+                        gap: 10px;
+                        margin-top: 1rem;
+                    }
+
+                    button {
+                        padding: 0.6rem 1rem;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        border: none;
+                        flex: 1;
+                    }
+
+                    button.vapt-submit {
+                        background: #2271b1;
+                        color: #fff;
+                    }
+
+                    button.vapt-submit:hover {
                         background: #135e96;
                     }
 
-                    #vapt-result {
+                    button.vapt-fill {
+                        background: #f0f0f1;
+                        color: #2271b1;
+                        border: 1px solid #2271b1;
+                    }
+
+                    button.vapt-fill:hover {
+                        background: #e5e5e5;
+                    }
+
+                    /* Modal Styles */
+                    .vapt-modal-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.5);
+                        z-index: 100;
+                        display: none;
+                        align-items: center;
+                        justify-content: center;
+                    }
+
+                    .vapt-modal {
+                        background: #fff;
+                        width: 90%;
+                        max-width: 500px;
+                        border-radius: 8px;
+                        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                        overflow: hidden;
+                        animation: vaptSlideIn 0.3s ease-out;
+                    }
+
+                    @keyframes vaptSlideIn {
+                        from {
+                            transform: translateY(-20px);
+                            opacity: 0;
+                        }
+
+                        to {
+                            transform: translateY(0);
+                            opacity: 1;
+                        }
+                    }
+
+                    .vapt-modal-header {
+                        padding: 15px 20px;
+                        background: #f0f0f1;
+                        border-bottom: 1px solid #ddd;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+
+                    .vapt-modal-header h3 {
+                        margin: 0;
+                        font-size: 1.1rem;
+                        color: #333;
+                    }
+
+                    .vapt-modal-close {
+                        background: none;
+                        border: none;
+                        font-size: 1.5rem;
+                        line-height: 1;
+                        color: #666;
+                        cursor: pointer;
+                        padding: 0;
+                        margin: 0;
+                        flex: 0;
+                    }
+
+                    .vapt-modal-body {
+                        padding: 20px;
+                        max-height: 70vh;
+                        overflow-y: auto;
+                    }
+
+                    .sanitized-data {
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 4px;
+                        font-family: monospace;
+                        white-space: pre-wrap;
+                        font-size: 0.9rem;
+                        border: 1px solid #e2e4e7;
+                        color: #333;
+                    }
+
+                    .vapt-modal-footer {
+                        padding: 15px 20px;
+                        border-top: 1px solid #ddd;
+                        text-align: right;
+                        background: #fff;
+                    }
+
+                    .vapt-btn-close {
+                        background: #2271b1;
+                        color: #fff;
+                        padding: 8px 16px;
+                        border-radius: 4px;
+                        border: none;
+                        cursor: pointer;
+                    }
+
+                    .result-inline {
                         margin-top: 1rem;
                         padding: 1rem;
                         border-radius: 4px;
@@ -877,106 +1032,188 @@ final class VAPT_Security
                         font-size: 0.9rem;
                     }
 
-                    .success {
-                        background: #d4edda;
-                        color: #155724;
-                        border: 1px solid #c3e6cb;
-                    }
-
-                    .error {
+                    .result-inline.error {
                         background: #f8d7da;
                         color: #721c24;
                         border: 1px solid #f5c6cb;
                     }
-
-                    .info {
-                        background: #cce5ff;
-                        color: #004085;
-                        border: 1px solid #b8daff;
-                    }
                 </style>
+                <?php wp_head(); ?>
             </head>
 
             <body>
                 <div class="vapt-test-container">
                     <h1>VAPT Security Test</h1>
-                    <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">
-                        Use this form to test <strong>Rate Limiting</strong> and <strong>Input Validation</strong> features.
-                    </p>
-                    <form id="vapt-test-form">
-                        <div class="form-group">
-                            <label for="name">Name</label>
-                            <input type="text" id="name" name="name" required placeholder="John Doe">
+
+                    <?php if ($cf7_form): ?>
+                        <div style="background: #e7f5fe; border: 1px solid #bde0fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 0.9em;">
+                            <strong>Testing Integration:</strong> Displaying Contact Form 7 (ID: <?php echo $cf7_form->ID; ?>). Submissions should be intercepted by VAPT Security.
                         </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" required placeholder="john@example.com">
+                        <?php echo do_shortcode('[contact-form-7 id="' . $cf7_form->ID . '"]'); ?>
+
+                        <p style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem;">
+                            <a href="?native=1" style="color: #666;">Switch to Native Test Form</a> |
+                            <a href="<?php echo home_url(); ?>" style="color: #2271b1; text-decoration: none;">&larr; Back to Home</a>
+                        </p>
+
+                    <?php else: ?>
+                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">
+                            Test <strong>Rate Limiting</strong> and <strong>Input Validation</strong> rules. Use "Strict" level to verify URL blocking.
+                            <?php if (defined('WPCF7_VERSION')): ?>
+                                <br><a href="?" style="color: #2271b1;">Test with Contact Form 7</a>
+                            <?php endif; ?>
+                        </p>
+
+                        <form id="vapt-test-form">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="form-group">
+                                        <label for="inquiry_type">Inquiry Type</label>
+                                        <select id="inquiry_type" name="inquiry_type">
+                                            <option value="general">General Inquiry</option>
+                                            <option value="support">Technical Support</option>
+                                            <option value="security">Security Report</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="form-group">
+                                        <label for="test_sanitization_level" style="color: #2271b1;">Test Level</label>
+                                        <select id="test_sanitization_level" name="test_sanitization_level">
+                                            <option value="">Global Setting (Default)</option>
+                                            <option value="basic">Basic</option>
+                                            <option value="standard">Standard</option>
+                                            <option value="strict">Strict</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="name">Name</label>
+                                <input type="text" id="name" name="name" required placeholder="John Doe">
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" name="email" required placeholder="john@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="message">Message</label>
+                                <textarea id="message" name="message" required placeholder="Enter message..."></textarea>
+                            </div>
+
+                            <input type="hidden" name="action" value="vapt_form_submit">
+                            <input type="hidden" name="nonce" value="<?php echo wp_create_nonce("vapt_form_action"); ?>">
+
+                            <div class="btn-group">
+                                <button type="button" class="vapt-fill" onclick="fillTestData()">Load Test Data</button>
+                                <button type="submit" class="vapt-submit">Submit Test</button>
+                            </div>
+                        </form>
+
+                        <div id="vapt-inline-result" class="result-inline"></div>
+                        <p style="text-align: center; margin-top: 1rem;"><a href="<?php echo home_url(); ?>" style="text-decoration: none; font-size: 0.85rem; color: #2271b1;">&larr; Back to Home</a></p>
+
+                        <!-- Modal -->
+                        <div id="vapt-modal-overlay" class="vapt-modal-overlay">
+                            <div class="vapt-modal">
+                                <div class="vapt-modal-header">
+                                    <h3>Submission Result</h3>
+                                    <button class="vapt-modal-close" onclick="closeModal()">&times;</button>
+                                </div>
+                                <div class="vapt-modal-body" id="vapt-modal-content">
+                                    <!-- Content injected via JS -->
+                                </div>
+                                <div class="vapt-modal-footer">
+                                    <button class="vapt-btn-close" onclick="closeModal()">Close</button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="message">Message</label>
-                            <textarea id="message" name="message" required placeholder="Test message..."></textarea>
-                        </div>
-                        <input type="hidden" name="action" value="vapt_form_submit">
-                        <input type="hidden" name="nonce" value="<?php echo wp_create_nonce(
-                                                                        "vapt_form_action",
-                                                                    ); ?>">
-                        <button type="submit">Submit Test</button>
-                    </form>
-                    <div id="vapt-result"></div>
-                    <p style="text-align: center; margin-top: 1rem;"><a href="<?php echo home_url(); ?>" style="text-decoration: none; font-size: 0.85rem; color: #2271b1;">&larr; Back to Home</a></p>
-                </div>
 
-                <script>
-                    document.getElementById('vapt-test-form').addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        var form = this;
-                        var resultDiv = document.getElementById('vapt-result');
-                        var btn = form.querySelector('button');
+                        <script>
+                            function fillTestData() {
+                                document.getElementById('name').value = 'Test User';
+                                document.getElementById('email').value = 'test@example.com';
+                                document.getElementById('inquiry_type').value = 'security';
+                                // Inject HTML/JS to test sanitization
+                                document.getElementById('message').value = "Hello! <script>alert('XSS')<\/script>\nHere is a URL: https://google.com\nStrict mode should break this.";
+                            }
 
-                        btn.disabled = true;
-                        btn.innerText = 'Submitting...';
-                        resultDiv.style.display = 'none';
-                        resultDiv.className = '';
+                            function closeModal() {
+                                document.getElementById('vapt-modal-overlay').style.display = 'none';
+                            }
 
-                        var formData = new FormData(form);
-
-                        fetch('<?php echo admin_url("admin-ajax.php"); ?>', {
-                                method: 'POST',
-                                body: formData
-                            })
-                            .then(response => {
-                                // Rate limiting often returns 429 status code
-                                if (response.status === 429) {
-                                    throw new Error('Too many requests (Rate Limit Exceeded)');
-                                }
-                                return response.json();
-                            })
-                            .then(data => {
-                                resultDiv.style.display = 'block';
-                                if (data.success) {
-                                    resultDiv.className = 'success';
-                                    resultDiv.innerText = data.data.message;
-                                    form.reset();
-                                } else {
-                                    resultDiv.className = 'error';
-                                    resultDiv.innerText = 'Error: ' + (data.data.message || 'Unknown error');
-                                }
-                            })
-                            .catch(error => {
-                                resultDiv.style.display = 'block';
-                                resultDiv.className = 'error';
-                                resultDiv.innerText = error.message;
-                            })
-                            .finally(() => {
-                                btn.disabled = false;
-                                btn.innerText = 'Submit Test';
+                            // Close modal on outside click
+                            document.getElementById('vapt-modal-overlay').addEventListener('click', function(e) {
+                                if (e.target === this) closeModal();
                             });
-                    });
-                </script>
+
+                            document.getElementById('vapt-test-form').addEventListener('submit', function(e) {
+                                e.preventDefault();
+                                var form = this;
+                                var inlineResult = document.getElementById('vapt-inline-result');
+                                var modalOverlay = document.getElementById('vapt-modal-overlay');
+                                var modalContent = document.getElementById('vapt-modal-content');
+                                var btn = form.querySelector('button[type="submit"]');
+
+                                btn.disabled = true;
+                                btn.innerText = 'Processing...';
+                                inlineResult.style.display = 'none';
+
+                                var formData = new FormData(form);
+
+                                fetch('<?php echo admin_url("admin-ajax.php"); ?>', {
+                                        method: 'POST',
+                                        body: formData
+                                    })
+                                    .then(response => {
+                                        if (response.status === 429) throw new Error('Too many requests (Rate Limit Exceeded)');
+                                        return response.json();
+                                    })
+                                    .then(data => {
+                                        if (data.success) {
+                                            // Success: Show Modal
+                                            let content = '<div style="color: #155724; background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 4px; margin-bottom: 15px;"><strong>Success:</strong> ' + data.data.message + '</div>';
+
+                                            // Validate and display sanitized data if available
+                                            if (data.data.sanitized_data) {
+                                                content += '<p style="margin-bottom: 5px; font-weight: 600;">Server Received (Sanitized Data):</p>';
+                                                content += '<div class="sanitized-data">';
+                                                content += '<strong>Level:</strong> ' + (data.data.sanitized_data._applied_level || 'global') + '\n\n';
+                                                content += '<strong>Type:</strong> ' + data.data.sanitized_data.inquiry_type + '\n';
+                                                content += '<strong>Name:</strong> ' + data.data.sanitized_data.name + '\n';
+                                                content += '<strong>Email:</strong> ' + data.data.sanitized_data.email + '\n';
+                                                content += '<strong>Message:</strong>\n' + data.data.sanitized_data.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                                content += '</div>';
+                                            }
+                                            modalContent.innerHTML = content;
+                                            modalOverlay.style.display = 'flex';
+                                            // form.reset(); 
+                                        } else {
+                                            // Error: Show inline
+                                            inlineResult.style.display = 'block';
+                                            inlineResult.className = 'result-inline error';
+                                            inlineResult.innerHTML = '<strong>Error:</strong> ' + (data.data.message || 'Unknown error');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        inlineResult.style.display = 'block';
+                                        inlineResult.className = 'result-inline error';
+                                        inlineResult.innerHTML = '<strong>Error:</strong> ' + error.message;
+                                    })
+                                    .finally(() => {
+                                        btn.disabled = false;
+                                        btn.innerText = 'Submit Test';
+                                    });
+                            });
+                        </script>
+                    <?php endif; ?>
+                </div>
             </body>
 
             </html>
-        <?php exit();
+        <?php
+            exit;
         }
     }
 
@@ -1776,8 +2013,19 @@ final class VAPT_Security
 
         // 3. Input validation (if enabled)
         if (VAPT_FEATURE_INPUT_VALIDATION) {
+            // Determine level override
+            $level_override = null;
+            if (!empty($_POST['test_sanitization_level'])) {
+                $valid_levels = ['basic', 'standard', 'strict'];
+                if (in_array($_POST['test_sanitization_level'], $valid_levels)) {
+                    $level_override = sanitize_text_field($_POST['test_sanitization_level']);
+                }
+            }
+
             $validator = new VAPT_Input_Validator();
             $schema = [
+                "test_sanitization_level" => ["required" => false, "type" => "string", "max" => 10],
+                "inquiry_type" => ["required" => false, "type" => "string", "max" => 20],
                 "name" => ["required" => true, "type" => "string", "max" => 50],
                 "email" => [
                     "required" => true,
@@ -1795,7 +2043,14 @@ final class VAPT_Security
                     "max" => 10,
                 ],
             ];
-            $data = $validator->validate($_POST, $schema);
+
+            // Pass override to validate method
+            $data = $validator->validate($_POST, $schema, $level_override);
+
+            // Add applied level to response for debug
+            if (!is_wp_error($data)) {
+                $data['_applied_level'] = !empty($_POST['test_sanitization_level']) ? $_POST['test_sanitization_level'] : 'global';
+            }
 
             if (is_wp_error($data)) {
                 // Log the validation error if logging is enabled
@@ -1815,6 +2070,7 @@ final class VAPT_Security
         } else {
             // Basic sanitization if validation is disabled
             $data = [
+                "inquiry_type" => sanitize_text_field($_POST["inquiry_type"] ?? ""),
                 "name" => sanitize_text_field($_POST["name"] ?? ""),
                 "email" => sanitize_email($_POST["email"] ?? ""),
                 "message" => sanitize_textarea_field($_POST["message"] ?? ""),
@@ -1874,6 +2130,7 @@ final class VAPT_Security
                 "Your message was sent successfully.",
                 "vapt-security",
             ),
+            "sanitized_data" => $data, // Return sanitized data for visual confirmation
         ]);
     }
 

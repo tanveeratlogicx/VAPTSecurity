@@ -2,6 +2,13 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [3.0.8] - 2025-12-26
+- **Feature**: Enhanced Test Form with "Sanitization Level" override dropdown (Basic, Standard, Strict) for immediate verification.
+- **Feature**: Added "Server Received Data" modal to Test Form for clear feedback on sanitized inputs.
+- **Fix**: Critical fix in `VAPT_Input_Validator` integration to safely handle runtime level overrides.
+- **UI**: Removed duplicate section headings in "Input Validation" tab for cleaner layout.
+- **Test UX**: Added "Inquiry Type" field and improved dummy data generator for validation testing.
+
 ## [3.0.7] - 2025-12-26
 ### Changed
 - **UI Refactor**: Converted the "Statistics" tab into a cleaner sub-tabbed interface, separating "Rate Limiting" and "Logging Statistics".

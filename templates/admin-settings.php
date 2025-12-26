@@ -333,7 +333,6 @@ $is_superadmin = VAPT_Security::is_superadmin();
                     <div class="vapt-grid-row">
                         <!-- Left Column: Validation Rules -->
                         <div class="vapt-grid-col">
-                            <h3><?php esc_html_e("Validation Rules", "vapt-security"); ?></h3>
                             <div class="settings-section">
                                 <?php do_settings_sections("vapt_security_validation"); ?>
                             </div>
@@ -341,7 +340,6 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
                         <!-- Right Column: Form Integrations -->
                         <div class="vapt-grid-col">
-                            <h3><?php esc_html_e("Form Integrations", "vapt-security"); ?></h3>
                             <div class="settings-section">
                                 <?php do_settings_sections("vapt_security_integrations"); ?>
                             </div>
