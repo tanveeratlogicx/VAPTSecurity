@@ -91,7 +91,7 @@ $vapt_version = defined('VAPT_VERSION') ? VAPT_VERSION : '2.x';
 
             <!-- Tab 1: License Management -->
             <div id="tab-license" class="vapt-domain-tab-content">
-                <h2><?php esc_html_e('License Management', 'vapt-security'); ?></h2>
+                <h3><span class="dashicons dashicons-admin-network"></span> <?php esc_html_e('License Management', 'vapt-security'); ?></h3>
                 <table class="form-table">
                     <tr>
                         <th scope="row"><?php esc_html_e('License Type', 'vapt-security'); ?></th>
@@ -140,7 +140,7 @@ $vapt_version = defined('VAPT_VERSION') ? VAPT_VERSION : '2.x';
 
             <!-- Tab 2: Domain Features -->
             <div id="tab-features" class="vapt-domain-tab-content">
-                <h2><?php esc_html_e('Domain Features', 'vapt-security'); ?></h2>
+                <h3><span class="dashicons dashicons-forms"></span> <?php esc_html_e('Domain Features', 'vapt-security'); ?></h3>
                 <p class="description"><?php esc_html_e('Enable or disable features for this domain. Disabled features are hidden from Admins.', 'vapt-security'); ?></p>
 
                 <form id="vapt-domain-features-form">
@@ -193,12 +193,12 @@ $vapt_version = defined('VAPT_VERSION') ? VAPT_VERSION : '2.x';
 
             <!-- Tab 3: Build Generator -->
             <div id="tab-build" class="vapt-domain-tab-content">
-                <h2><?php esc_html_e('Locked Configuration Generator', 'vapt-security'); ?></h2>
+                <h3><span class="dashicons dashicons-admin-tools"></span> <?php esc_html_e('Locked Configuration Generator', 'vapt-security'); ?></h3>
                 <p class="description"><?php esc_html_e('Generate a portable configuration file locked to a specific domain pattern.', 'vapt-security'); ?></p>
 
                 <!-- Build Info Card -->
-                <div class="card" style="padding: 15px; margin-bottom: 20px; background: #f0f0f1; border: 1px solid #ccd0d4;">
-                    <h3 style="margin-top:0;">Current Build Information</h3>
+                <div class="card" style="padding: 20px; margin-bottom: 25px; background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+                    <h4 style="margin-top:0; border-bottom: 1px solid #f0f0f1; padding-bottom: 10px; margin-bottom: 15px;"><span class="dashicons dashicons-info" style="vertical-align: text-bottom; margin-right: 5px; color: #2271b1;"></span><?php esc_html_e('Current Build Information', 'vapt-security'); ?></h4>
                     <p>
                         <strong>Generated Version:</strong> <?php echo esc_html($build_info['version'] ?? 'N/A'); ?><br>
                         <strong>Generated At:</strong> <?php echo esc_html($build_ver); ?><br>
@@ -214,339 +214,403 @@ $vapt_version = defined('VAPT_VERSION') ? VAPT_VERSION : '2.x';
                     </p>
                 </div>
 
-                <table class="form-table">
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Target Domain Pattern', 'vapt-security'); ?></th>
-                        <td>
-                            <input type="text" id="vapt-lock-domain" class="regular-text" placeholder="*.example.com" value="<?php echo esc_attr($_SERVER['HTTP_HOST']); ?>">
-                            <p class="description"><?php esc_html_e('Use * for wildcards (e.g., *.example.com matches staging.example.com).', 'vapt-security'); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Include Current Settings', 'vapt-security'); ?></th>
-                        <td>
-                            <label>
-                                <input type="checkbox" id="vapt-lock-include-settings" checked>
-                                <?php esc_html_e('Export current plugin configuration', 'vapt-security'); ?>
-                            </label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Custom Plugin Name', 'vapt-security'); ?></th>
-                        <td>
-                            <input type="text" id="vapt-build-plugin-name" class="regular-text" placeholder="VAPT Security">
-                            <p class="description"><?php esc_html_e('Leave empty to use default. Changes the "Plugin Name" header in the built zip.', 'vapt-security'); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Custom Author Name', 'vapt-security'); ?></th>
-                        <td>
-                            <input type="text" id="vapt-build-author-name" class="regular-text" placeholder="Tanveer Malik">
-                            <p class="description"><?php esc_html_e('Leave empty to use default. Changes the "Author" header in the built zip.', 'vapt-security'); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th></th>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <button type="button" id="vapt-generate-client-zip" class="button button-primary">
-                                    <span class="dashicons dashicons-download" style="line-height: 1.3;"></span>
-                                    <?php esc_html_e('Download Client Zip', 'vapt-security'); ?>
-                                </button>
-                                <button type="button" id="vapt-generate-locked-config" class="button button-secondary">
-                                    <span class="dashicons dashicons-upload" style="line-height: 1.3;"></span>
-                                    <?php esc_html_e('Save Config to Server', 'vapt-security'); ?>
-                                </button>
-                            </div>
+                <div class="card" style="padding: 20px; background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Target Domain Pattern', 'vapt-security'); ?></th>
+                            <td>
+                                <input type="text" id="vapt-lock-domain" class="regular-text" placeholder="*.example.com" value="<?php echo esc_attr($_SERVER['HTTP_HOST']); ?>">
+                                <p class="description"><?php esc_html_e('Use * for wildcards (e.g., *.example.com matches staging.example.com).', 'vapt-security'); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Include Current Settings', 'vapt-security'); ?></th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" id="vapt-lock-include-settings" checked>
+                                    <?php esc_html_e('Export current plugin configuration', 'vapt-security'); ?>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Custom Plugin Name', 'vapt-security'); ?></th>
+                            <td>
+                                <input type="text" id="vapt-build-plugin-name" class="regular-text" placeholder="VAPT Security">
+                                <p class="description"><?php esc_html_e('Leave empty to use default. Changes the "Plugin Name" header in the built zip.', 'vapt-security'); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php esc_html_e('Custom Author Name', 'vapt-security'); ?></th>
+                            <td>
+                                <input type="text" id="vapt-build-author-name" class="regular-text" placeholder="Tanveer Malik">
+                                <p class="description"><?php esc_html_e('Leave empty to use default. Changes the "Author" header in the built zip.', 'vapt-security'); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <button type="button" id="vapt-generate-client-zip" class="button button-primary">
+                                        <span class="dashicons dashicons-download" style="line-height: 1.3;"></span>
+                                        <?php esc_html_e('Download Client Zip', 'vapt-security'); ?>
+                                    </button>
+                                    <button type="button" id="vapt-generate-locked-config" class="button button-secondary">
+                                        <span class="dashicons dashicons-upload" style="line-height: 1.3;"></span>
+                                        <?php esc_html_e('Save Config to Server', 'vapt-security'); ?>
+                                    </button>
+                                </div>
 
-                            <div id="vapt-generate-msg" style="margin-top: 10px;"></div>
+                                <div id="vapt-generate-msg" style="margin-top: 10px;"></div>
 
-                            <p class="description" style="margin-top: 15px;">
-                                <strong><?php esc_html_e('Download Client Zip', 'vapt-security'); ?>:</strong> <?php esc_html_e('Generates a portable plugin zip locked to the target domain.', 'vapt-security'); ?><br>
-                                <strong><?php esc_html_e('Save Config to Server', 'vapt-security'); ?>:</strong> <?php esc_html_e('Writes vapt-locked-config.php to THIS server. Use to lock this environment.', 'vapt-security'); ?>
-                            </p>
-                        </td>
-                    </tr>
-                </table>
+                                <p class="description" style="margin-top: 15px;">
+                                    <strong><?php esc_html_e('Download Client Zip', 'vapt-security'); ?>:</strong> <?php esc_html_e('Generates a portable plugin zip locked to the target domain.', 'vapt-security'); ?><br>
+                                    <strong><?php esc_html_e('Save Config to Server', 'vapt-security'); ?>:</strong> <?php esc_html_e('Writes vapt-locked-config.php to THIS server. Use to lock this environment.', 'vapt-security'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
+        <?php endif; ?>
         </div>
-    <?php endif; ?>
-</div>
 
-<script>
-    jQuery(document).ready(function($) {
-        // Initialize Tabs if element exists
-        if ($('#vapt-domain-tabs-container').length) {
-            try {
-                var activeTab = localStorage.getItem('vapt_domain_active_tab');
-                var activeIndex = activeTab ? parseInt(activeTab) : 0;
+        <script>
+            jQuery(document).ready(function($) {
+                        // Initialize Tabs if element exists
+                        if ($('#vapt-domain-tabs-container').length) {
+                            try {
+                                var activeTab = localStorage.getItem('vapt_domain_active_tab');
+                                var activeIndex = activeTab ? parseInt(activeTab) : 0;
 
-                $('#vapt-domain-tabs-container').tabs({
-                    active: activeIndex,
-                    activate: function(event, ui) {
-                        var newIndex = ui.newTab.index();
-                        localStorage.setItem('vapt_domain_active_tab', newIndex);
-                    },
-                    create: function(event, ui) {
-                        // Restore active tab logic if desired
-                    }
-                });
-                // Force show first tab content if tabs didn't fire (fallback)
-                // But tabs() usually sets display style.
-            } catch (e) {
-                console.error('VAPT Tabs Error:', e);
-                // Fallback: show all or first
-                $('.vapt-domain-tab-content').show();
+                                $('#vapt-domain-tabs-container').tabs({
+                                    active: activeIndex,
+                                    activate: function(event, ui) {
+                                        var newIndex = ui.newTab.index();
+                                        localStorage.setItem('vapt_domain_active_tab', newIndex);
+                                    },
+                                    create: function(event, ui) {
+                                        // Restore active tab logic if desired
+                                    }
+                                });
+                                // Force show first tab content if tabs didn't fire (fallback)
+                                // But tabs() usually sets display style.
+                            } catch (e) {
+                                console.error('VAPT Tabs Error:', e);
+                                // Fallback: show all or first
+                                $('.vapt-domain-tab-content').show();
+                            }
+                        }
+
+                        // --- Original Logic Preserved Below ---
+
+                        let timerInterval;
+
+                        function startOtpTimer() {
+                            let timeLeft = 120;
+                            $('#vapt-otp-timer').text(timeLeft);
+                            $('#vapt-otp-timer-container').show();
+                            $('#vapt-resend-otp').hide();
+
+                            clearInterval(timerInterval);
+                            timerInterval = setInterval(function() {
+                                timeLeft--;
+                                $('#vapt-otp-timer').text(timeLeft);
+                                if (timeLeft <= 0) {
+                                    clearInterval(timerInterval);
+                                    $('#vapt-otp-timer-container').hide();
+                                    $('#vapt-resend-otp').show();
+                                }
+                            }, 1000);
+                        }
+
+                        // OTP Logic (Same endpoints, generic)
+                        $('#vapt-send-otp, #vapt-resend-otp').click(function(e) {
+                            e.preventDefault();
+
+                            // Disable buttons temporarily
+                            $(this).prop('disabled', true);
+
+                            $.post(ajaxurl, {
+                                action: 'vapt_send_otp'
+                            }, function(r) {
+                                // Re-enable (for send btn)
+                                $('#vapt-send-otp').prop('disabled', false);
+
+                                if (r.success) {
+                                    $('#vapt-otp-step-1').hide();
+                                    $('#vapt-otp-step-2').show();
+                                    $('#vapt-otp-message').html('<span style="color:green">' + r.data.message + '</span>');
+                                    startOtpTimer();
+                                } else {
+                                    $('#vapt-otp-message').html('<span style="color:red">' + r.data.message + '</span>');
+                                }
+                            });
+                        });
+
+                        $('#vapt-verify-otp').click(function() {
+                            $.post(ajaxurl, {
+                                action: 'vapt_verify_otp',
+                                otp: $('#vapt-otp-input').val()
+                            }, function(r) {
+                                if (r.success) location.reload();
+                                else $('#vapt-otp-message').html('<span style="color:red">' + r.data.message + '</span>');
+                            });
+                        });
+
+                        // Save Features
+                        $('#vapt-domain-features-form').on('submit', function(e) {
+                            e.preventDefault();
+                            $('#vapt-save-features').click();
+                        });
+
+                        $('#vapt-save-features').click(function(e) {
+                            e.preventDefault();
+                            var btn = $(this);
+                            var originalText = btn.text();
+                            btn.prop('disabled', true).text('<?php esc_html_e('Saving...', 'vapt-security'); ?>');
+
+                            var data = $('#vapt-domain-features-form').serialize();
+                            $.post(ajaxurl, {
+                                action: 'vapt_save_domain_features',
+                                data: data
+                            }, function(r) {
+                                btn.prop('disabled', false).text(originalText);
+                                if (r.success) $('#vapt-features-msg').html('<span style="color:green">' + r.data.message + '</span>');
+                                else $('#vapt-features-msg').html('<span style="color:red">' + r.data.message + '</span>');
+
+                                // Clear message after 3 seconds
+                                setTimeout(function() {
+                                    $('#vapt-features-msg').fadeOut(function() {
+                                        $(this).html('').show();
+                                    });
+                                }, 3000);
+                            });
+                        });
+
+                        // License (Reuse endpoints)
+
+                        // Immediate Frontend Update
+                        var futureExpiries = <?php echo json_encode($future_expiries); ?>;
+
+                        function toggleRenewButton() {
+                            var isChecked = $('#vapt-license-auto-renew').is(':checked');
+                            $('#vapt-renew-license').prop('disabled', !isChecked);
+                        }
+
+                        // Initial state
+                        toggleRenewButton();
+
+                        $('#vapt-license-auto-renew').change(function() {
+                            toggleRenewButton();
+                        });
+
+                        $('#vapt-license-type').change(function() {
+                            var type = $(this).val();
+                            if (futureExpiries[type]) {
+                                $('#vapt-license-expiry').val(futureExpiries[type]);
+                            }
+
+                            // Developer Constraint
+                            if (type === 'developer') {
+                                $('#vapt-license-auto-renew').prop('checked', false).prop('disabled', true);
+                            } else {
+                                $('#vapt-license-auto-renew').prop('disabled', false);
+                            }
+                            toggleRenewButton();
+                        });
+
+                        $('#vapt-update-license').click(function() {
+                            var btn = $(this);
+                            var originalText = btn.text();
+                            btn.prop('disabled', true).text('<?php esc_html_e('Updating...', 'vapt-security'); ?>');
+
+                            $.post(ajaxurl, {
+                                action: 'vapt_update_license',
+                                type: $('#vapt-license-type').val(),
+                                auto_renew: $('#vapt-license-auto-renew').is(':checked') ? 1 : 0
+                            }, function(r) {
+                                btn.prop('disabled', false).text(originalText);
+                                if (r.success) {
+                                    $('#vapt-license-msg').html('<span style="color:green">' + r.data.message + '</span>');
+                                    if (r.data.expires_formatted) $('#vapt-license-expiry').val(r.data.expires_formatted);
+                                } else $('#vapt-license-msg').html('<span style="color:red">' + r.data.message + '</span>');
+
+                                setTimeout(function() {
+                                    $('#vapt-license-msg').fadeOut(function() {
+                                        $(this).html('').show();
+                                    });
+                                }, 3000);
+                            });
+                        });
+                        // Locked Config Generator
+                        $('#vapt-generate-locked-config').click(function(e) {
+                            e.preventDefault();
+                            if (!confirm('<?php esc_html_e('Are you sure?\\n\\nThis will overwrite the vapt-locked-config.php file on THIS server and lock the plugin to the specified domain.', 'vapt-security'); ?>')) {
+                                return;
+                            }
+
+                            var btn = $(this);
+                            btn.prop('disabled', true).text('<?php esc_html_e('Saving...', 'vapt-security'); ?>');
+
+                            // Dynamic AJAX URL fix for port mismatches (e.g. localhost:10017 vs localhost)
+                            var currentAjaxUrl = ajaxurl;
+                            try {
+                                var url = new URL(ajaxurl);
+                                if (url.origin !== window.location.origin) {
+                                    currentAjaxUrl = window.location.origin + url.pathname + url.search;
+                                }
+                            } catch (e) {
+                                // Warning: invalid URL, fallback to default
+                            }
+
+                            $.post(currentAjaxUrl, {
+                                action: 'vapt_generate_locked_config',
+                                domain: $('#vapt-lock-domain').val(),
+                                include_settings: $('#vapt-lock-include-settings').is(':checked') ? 1 : 0,
+                                nonce: '<?php echo wp_create_nonce("vapt_locked_config"); ?>'
+                            }, function(r) {
+                                if (r.success) {
+                                    $('#vapt-generate-msg').html('<span style="color:green">' + r.data.message + '</span>');
+                                    // Reload to show updated build info and verify sync
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 1000);
+                                } else {
+                                    $('#vapt-generate-msg').html('<span style="color:red">' + r.data.message + '</span>');
+                                    btn.prop('disabled', false).text('<?php esc_html_e('Save Config to Server', 'vapt-security'); ?>');
+                                }
+                            }).fail(function(xhr) {
+                                var msg = 'Error: ' + xhr.status + ' ' + xhr.statusText;
+                                if (xhr.status === 0) {
+                                    msg = 'Connection Blocked. Check console for CORS or Network errors.';
+                                }
+                                if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                                    msg = xhr.responseJSON.data.message;
+                                }
+                                $('#vapt-generate-msg').html('<span style="color:red">' + msg + '</span>');
+                                btn.prop('disabled', false).text('<?php esc_html_e('Save Config to Server', 'vapt-security'); ?>');
+                            });
+                        });
+
+                        // Client Zip Generator
+                        $('#vapt-generate-client-zip').click(function() {
+                            var btn = $(this);
+                            var originalText = btn.text();
+                            btn.prop('disabled', true).text('<?php esc_html_e('Building Zip...', 'vapt-security'); ?>');
+
+                            $.post(ajaxurl, {
+                                action: 'vapt_generate_client_zip',
+                                domain: $('#vapt-lock-domain').val(),
+                                plugin_name: $('#vapt-build-plugin-name').val(),
+                                author_name: $('#vapt-build-author-name').val(),
+                                include_settings: $('#vapt-lock-include-settings').is(':checked') ? 1 : 0,
+                                nonce: '<?php echo wp_create_nonce("vapt_locked_config"); ?>'
+                            }, function(r) {
+                                btn.prop('disabled', false).text(originalText);
+                                if (r.success) {
+                                    $('#vapt-generate-msg').html('<span style="color:green"><?php esc_html_e('Zip generated!', 'vapt-security'); ?></span>');
+                                    // Download
+                                    var byteCharacters = atob(r.data.base64);
+                                    var byteNumbers = new Array(byteCharacters.length);
+                                    for (var i = 0; i < byteCharacters.length; i++) {
+                                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                    }
+                                    var byteArray = new Uint8Array(byteNumbers);
+                                    var blob = new Blob([byteArray], {
+                                        type: "application/zip"
+                                    });
+
+                                    var link = document.createElement('a');
+                                    link.href = window.URL.createObjectURL(blob);
+                                    link.download = r.data.filename;
+                                    link.click();
+                                } else {
+                                    $('#vapt-generate-msg').html('<span style="color:red">' + r.data.message + '</span>');
+                                }
+                            });
+                        });
+
+                        // Re-import Config
+                        $('#vapt-reimport-config').click(function() {
+                            var btn = $(this);
+                            btn.prop('disabled', true).text('<?php esc_html_e('Importing...', 'vapt-security'); ?>');
+                            $.post(ajaxurl, {
+                                action: 'vapt_reimport_config',
+                                nonce: '<?php echo wp_create_nonce("vapt_locked_config"); ?>' // Reuse same context nonce or create new one? Locked config nonce fits.
+                            }, function(r) {
+                                btn.prop('disabled', false).text('<?php esc_html_e('Force Re-import from Server File', 'vapt-security'); ?>');
+                                if (r.success) {
+                                    $('#vapt-reimport-msg').html('<span style="color:green">' + r.data.message + '</span>');
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 1500);
+                                } else {
+                                    $('#vapt-reimport-msg').html('<span style="color:red">' + r.data.message + '</span>');
+                                }
+                            });
+                        });
+        </script>
+
+        <style>
+            .vapt-domain-tab-content {
+                padding: 20px;
+                background: #fff;
+                border: 1px solid #ccd0d4;
+                border-top: none;
             }
-        }
 
-        // --- Original Logic Preserved Below ---
-
-        let timerInterval;
-
-        function startOtpTimer() {
-            let timeLeft = 120;
-            $('#vapt-otp-timer').text(timeLeft);
-            $('#vapt-otp-timer-container').show();
-            $('#vapt-resend-otp').hide();
-
-            clearInterval(timerInterval);
-            timerInterval = setInterval(function() {
-                timeLeft--;
-                $('#vapt-otp-timer').text(timeLeft);
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    $('#vapt-otp-timer-container').hide();
-                    $('#vapt-resend-otp').show();
-                }
-            }, 1000);
-        }
-
-        // OTP Logic (Same endpoints, generic)
-        $('#vapt-send-otp, #vapt-resend-otp').click(function(e) {
-            e.preventDefault();
-
-            // Disable buttons temporarily
-            $(this).prop('disabled', true);
-
-            $.post(ajaxurl, {
-                action: 'vapt_send_otp'
-            }, function(r) {
-                // Re-enable (for send btn)
-                $('#vapt-send-otp').prop('disabled', false);
-
-                if (r.success) {
-                    $('#vapt-otp-step-1').hide();
-                    $('#vapt-otp-step-2').show();
-                    $('#vapt-otp-message').html('<span style="color:green">' + r.data.message + '</span>');
-                    startOtpTimer();
-                } else {
-                    $('#vapt-otp-message').html('<span style="color:red">' + r.data.message + '</span>');
-                }
-            });
-        });
-
-        $('#vapt-verify-otp').click(function() {
-            $.post(ajaxurl, {
-                action: 'vapt_verify_otp',
-                otp: $('#vapt-otp-input').val()
-            }, function(r) {
-                if (r.success) location.reload();
-                else $('#vapt-otp-message').html('<span style="color:red">' + r.data.message + '</span>');
-            });
-        });
-
-        // Save Features
-        $('#vapt-domain-features-form').on('submit', function(e) {
-            e.preventDefault();
-            $('#vapt-save-features').click();
-        });
-
-        $('#vapt-save-features').click(function(e) {
-            e.preventDefault();
-            var btn = $(this);
-            var originalText = btn.text();
-            btn.prop('disabled', true).text('<?php esc_html_e('Saving...', 'vapt-security'); ?>');
-
-            var data = $('#vapt-domain-features-form').serialize();
-            $.post(ajaxurl, {
-                action: 'vapt_save_domain_features',
-                data: data
-            }, function(r) {
-                btn.prop('disabled', false).text(originalText);
-                if (r.success) $('#vapt-features-msg').html('<span style="color:green">' + r.data.message + '</span>');
-                else $('#vapt-features-msg').html('<span style="color:red">' + r.data.message + '</span>');
-
-                // Clear message after 3 seconds
-                setTimeout(function() {
-                    $('#vapt-features-msg').fadeOut(function() {
-                        $(this).html('').show();
-                    });
-                }, 3000);
-            });
-        });
-
-        // License (Reuse endpoints)
-
-        // Immediate Frontend Update
-        var futureExpiries = <?php echo json_encode($future_expiries); ?>;
-
-        function toggleRenewButton() {
-            var isChecked = $('#vapt-license-auto-renew').is(':checked');
-            $('#vapt-renew-license').prop('disabled', !isChecked);
-        }
-
-        // Initial state
-        toggleRenewButton();
-
-        $('#vapt-license-auto-renew').change(function() {
-            toggleRenewButton();
-        });
-
-        $('#vapt-license-type').change(function() {
-            var type = $(this).val();
-            if (futureExpiries[type]) {
-                $('#vapt-license-expiry').val(futureExpiries[type]);
+            .vapt-domain-tab-content h3 {
+                margin: 0 0 20px 0;
+                padding: 12px 15px;
+                border: 1px solid #ccd0d4;
+                border-bottom: 2px solid #e2e4e7;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 1.4em;
+                color: #1d2327;
+                background: #f6f7f7;
+                border-radius: 4px;
+                box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.05);
             }
 
-            // Developer Constraint
-            if (type === 'developer') {
-                $('#vapt-license-auto-renew').prop('checked', false).prop('disabled', true);
-            } else {
-                $('#vapt-license-auto-renew').prop('disabled', false);
-            }
-            toggleRenewButton();
-        });
-
-        $('#vapt-update-license').click(function() {
-            var btn = $(this);
-            var originalText = btn.text();
-            btn.prop('disabled', true).text('<?php esc_html_e('Updating...', 'vapt-security'); ?>');
-
-            $.post(ajaxurl, {
-                action: 'vapt_update_license',
-                type: $('#vapt-license-type').val(),
-                auto_renew: $('#vapt-license-auto-renew').is(':checked') ? 1 : 0
-            }, function(r) {
-                btn.prop('disabled', false).text(originalText);
-                if (r.success) {
-                    $('#vapt-license-msg').html('<span style="color:green">' + r.data.message + '</span>');
-                    if (r.data.expires_formatted) $('#vapt-license-expiry').val(r.data.expires_formatted);
-                } else $('#vapt-license-msg').html('<span style="color:red">' + r.data.message + '</span>');
-
-                setTimeout(function() {
-                    $('#vapt-license-msg').fadeOut(function() {
-                        $(this).html('').show();
-                    });
-                }, 3000);
-            });
-        });
-        // Locked Config Generator
-        $('#vapt-generate-locked-config').click(function(e) {
-            e.preventDefault();
-            if (!confirm('<?php esc_html_e('Are you sure?\\n\\nThis will overwrite the vapt-locked-config.php file on THIS server and lock the plugin to the specified domain.', 'vapt-security'); ?>')) {
-                return;
+            .vapt-domain-tab-content h3 .dashicons {
+                color: #2271b1;
+                font-size: 24px;
+                width: 24px;
+                height: 24px;
             }
 
-            var btn = $(this);
-            btn.prop('disabled', true).text('<?php esc_html_e('Saving...', 'vapt-security'); ?>');
-
-            // Dynamic AJAX URL fix for port mismatches (e.g. localhost:10017 vs localhost)
-            var currentAjaxUrl = ajaxurl;
-            try {
-                var url = new URL(ajaxurl);
-                if (url.origin !== window.location.origin) {
-                    currentAjaxUrl = window.location.origin + url.pathname + url.search;
-                }
-            } catch (e) {
-                // Warning: invalid URL, fallback to default
+            .vapt-feature-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 20px;
+                margin-bottom: 25px;
             }
 
-            $.post(currentAjaxUrl, {
-                action: 'vapt_generate_locked_config',
-                domain: $('#vapt-lock-domain').val(),
-                include_settings: $('#vapt-lock-include-settings').is(':checked') ? 1 : 0,
-                nonce: '<?php echo wp_create_nonce("vapt_locked_config"); ?>'
-            }, function(r) {
-                if (r.success) {
-                    $('#vapt-generate-msg').html('<span style="color:green">' + r.data.message + '</span>');
-                    // Reload to show updated build info and verify sync
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    $('#vapt-generate-msg').html('<span style="color:red">' + r.data.message + '</span>');
-                    btn.prop('disabled', false).text('<?php esc_html_e('Save Config to Server', 'vapt-security'); ?>');
-                }
-            }).fail(function(xhr) {
-                var msg = 'Error: ' + xhr.status + ' ' + xhr.statusText;
-                if (xhr.status === 0) {
-                    msg = 'Connection Blocked. Check console for CORS or Network errors.';
-                }
-                if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
-                    msg = xhr.responseJSON.data.message;
-                }
-                $('#vapt-generate-msg').html('<span style="color:red">' + msg + '</span>');
-                btn.prop('disabled', false).text('<?php esc_html_e('Save Config to Server', 'vapt-security'); ?>');
-            });
-        });
+            .vapt-feature-item {
+                background: #fdfdfd;
+                border: 1px solid #ccd0d4;
+                padding: 15px;
+                border-radius: 6px;
+                box-shadow: 0 1px 1px rgba(0, 0, 0, .02);
+            }
 
-        // Client Zip Generator
-        $('#vapt-generate-client-zip').click(function() {
-            var btn = $(this);
-            var originalText = btn.text();
-            btn.prop('disabled', true).text('<?php esc_html_e('Building Zip...', 'vapt-security'); ?>');
+            .vapt-feature-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #f0f0f1;
+            }
 
-            $.post(ajaxurl, {
-                action: 'vapt_generate_client_zip',
-                domain: $('#vapt-lock-domain').val(),
-                plugin_name: $('#vapt-build-plugin-name').val(),
-                author_name: $('#vapt-build-author-name').val(),
-                include_settings: $('#vapt-lock-include-settings').is(':checked') ? 1 : 0,
-                nonce: '<?php echo wp_create_nonce("vapt_locked_config"); ?>'
-            }, function(r) {
-                btn.prop('disabled', false).text(originalText);
-                if (r.success) {
-                    $('#vapt-generate-msg').html('<span style="color:green"><?php esc_html_e('Zip generated!', 'vapt-security'); ?></span>');
-                    // Download
-                    var byteCharacters = atob(r.data.base64);
-                    var byteNumbers = new Array(byteCharacters.length);
-                    for (var i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    var byteArray = new Uint8Array(byteNumbers);
-                    var blob = new Blob([byteArray], {
-                        type: "application/zip"
-                    });
-
-                    var link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.download = r.data.filename;
-                    link.click();
-                } else {
-                    $('#vapt-generate-msg').html('<span style="color:red">' + r.data.message + '</span>');
-                }
-            });
-        });
-
-        // Re-import Config
-        $('#vapt-reimport-config').click(function() {
-            var btn = $(this);
-            btn.prop('disabled', true).text('<?php esc_html_e('Importing...', 'vapt-security'); ?>');
-            $.post(ajaxurl, {
-                action: 'vapt_reimport_config',
-                nonce: '<?php echo wp_create_nonce("vapt_locked_config"); ?>' // Reuse same context nonce or create new one? Locked config nonce fits.
-            }, function(r) {
-                btn.prop('disabled', false).text('<?php esc_html_e('Force Re-import from Server File', 'vapt-security'); ?>');
-                if (r.success) {
-                    $('#vapt-reimport-msg').html('<span style="color:green">' + r.data.message + '</span>');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    $('#vapt-reimport-msg').html('<span style="color:red">' + r.data.message + '</span>');
-                }
-            });
-        });
-    });
-</script>
+            .vapt-feature-header h4 {
+                margin: 0;
+                font-size: 1em;
+                color: #1d2327;
+            }
+        </style>
+        <?php
+        // Close the wrapper div from line 51 if not closed elsewhere, but looking at file it seems closed.
+        ?>

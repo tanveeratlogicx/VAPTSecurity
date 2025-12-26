@@ -3,7 +3,7 @@ Contributors: tanveeratlogicx
 Tags: security, vapt, dos protection, input validation, rate limiting
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 4.0.0
+Stable tag: 4.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -117,6 +117,37 @@ Yes, you can create a `vapt-config.php` file in your WordPress root directory to
 
 == Changelog ==
  
+= 4.1.0 =
+* Feature: Added "Cron Rate Limit Test" diagnostic tool to demonstrate throttling.
+* Improvement: Redesigned WP-Cron Protection tab layout for better ergonomics.
+* Improvement: Enhanced H3 section headers with distinct backgrounds and icons across all tabs.
+* Improvement: Reordered settings tabs (Input Validation now precedes Rate Limiter).
+* Improvement: Enhanced Server IP detection to favor IPv4.
+
+= 4.0.6 =
+* Fix: Adopted ini_set approach for sendmail_from to resolve delivery failures in LocalWP.
+* Fix: Matched working manual test signature (3-argument mail() call).
+
+= 4.0.5 =
+* Fix: Added mandatory From header to direct mail() calls to satisfy PHP requirements.
+* Version: Reliability update for local environments.
+
+= 4.0.4 =
+* Fix: Switched to naked mail() calls for OTP to match successful manual tests.
+* Enhancement: Bypassed wp_mail filtering to ensure delivery in LocalWP environments.
+
+= 4.0.3 =
+* Fix: Simplified email headers to improve OTP delivery in local environments.
+* Version: Periodic version bump.
+
+= 4.0.2 =
+* Fix: Resolved undefined variable warning in Domain Control access interception.
+
+= 4.0.1 =
+* Security: Implemented obfuscation for Superadmin identifiers and management URLs.
+* Security: Consolidated identity verification logic into a secure reconstruction helper.
+* Docs: Synchronized all project guides and architectural documentation.
+
 = 4.0.0 =
 * Major Release: Version bumped to 4.0.0.
 * Tweak: Removed home page Test URL from General Settings for a cleaner interface.

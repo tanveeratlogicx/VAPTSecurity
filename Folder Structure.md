@@ -60,5 +60,5 @@ VAPTSecurity/
 ├── vapt-config-sample.php   # Sample configuration file
 ├── vapt-config.php          # Active configuration file
 ├── vapt-locked-config.php   # Locked domain configuration
-└── vapt-security.php        # Main plugin file (v4.0.0)
+└── vapt-security.php        # Main plugin file (v4.1.0)
 ```

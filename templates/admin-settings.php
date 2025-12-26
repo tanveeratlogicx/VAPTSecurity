@@ -159,16 +159,6 @@ $is_superadmin = VAPT_Security::is_superadmin();
                                                                             ); ?></a></li>
                 <?php endif; ?>
                 <?php if (
-                    VAPT_Features::is_enabled("rate_limiting") &&
-                    defined("VAPT_FEATURE_RATE_LIMITING") &&
-                    VAPT_FEATURE_RATE_LIMITING
-                ): ?>
-                    <li class="vapt-security-tab"><a href="#tab-rate-limiter"><?php esc_html_e(
-                                                                                    "Rate Limiter",
-                                                                                    "vapt-security",
-                                                                                ); ?></a></li>
-                <?php endif; ?>
-                <?php if (
                     VAPT_Features::is_enabled("input_validation") &&
                     defined("VAPT_FEATURE_INPUT_VALIDATION") &&
                     VAPT_FEATURE_INPUT_VALIDATION
@@ -177,6 +167,16 @@ $is_superadmin = VAPT_Security::is_superadmin();
                                                                                 "Input Validation",
                                                                                 "vapt-security",
                                                                             ); ?></a></li>
+                <?php endif; ?>
+                <?php if (
+                    VAPT_Features::is_enabled("rate_limiting") &&
+                    defined("VAPT_FEATURE_RATE_LIMITING") &&
+                    VAPT_FEATURE_RATE_LIMITING
+                ): ?>
+                    <li class="vapt-security-tab"><a href="#tab-rate-limiter"><?php esc_html_e(
+                                                                                    "Rate Limiter",
+                                                                                    "vapt-security",
+                                                                                ); ?></a></li>
                 <?php endif; ?>
 
 
@@ -199,28 +199,112 @@ $is_superadmin = VAPT_Security::is_superadmin();
                 VAPT_FEATURE_WP_CRON_PROTECTION
             ): ?>
                 <div id="tab-general" class="vapt-security-tab-content">
-                    <h2><?php esc_html_e("General & Cron Settings", "vapt-security"); ?></h2>
                     <div class="vapt-grid-row">
                         <!-- Left Column: General Configuration -->
                         <div class="vapt-grid-col">
-                            <h3><?php esc_html_e("General Configuration", "vapt-security"); ?></h3>
+                            <h3><span class="dashicons dashicons-admin-generic"></span> <?php esc_html_e("General Configuration", "vapt-security"); ?></h3>
                             <div class="settings-section">
                                 <?php do_settings_sections("vapt_security_general"); ?>
+                            </div>
+
+                            <div class="vapt-server-cron-info" style="background: #fdfdfd; padding: 15px; border: 1px solid #ccd0d4; border-left: 4px solid #72aee6; margin-top: 25px; border-radius: 4px;">
+                                <h4 style="margin-top: 0;"><span class="dashicons dashicons-admin-settings" style="vertical-align: text-bottom; margin-right: 5px;"></span><?php esc_html_e("Server Level Custom Cron", "vapt-security"); ?></h4>
+                                <p class="description" style="margin-bottom: 10px;"><?php esc_html_e("To ensure robust performance and reliability, we recommend disabling WP-Cron and setting up a real server-level cron job.", "vapt-security"); ?></p>
+                                <p><strong><?php esc_html_e("Example Command (every 30 mins):", "vapt-security"); ?></strong></p>
+                                <code style="display: block; padding: 10px; background: #fff; border: 1px solid #eee; border-radius: 4px; font-family: monospace; word-break: break-all; font-size: 11px;">*/30 * * * * wget -q -O - <?php echo esc_url(site_url("wp-cron.php?doing_wp_cron")); ?> >/dev/null 2>&1</code>
+                            </div>
+
+                            <div class="settings-feature-box" style="margin-top: 20px;">
+                                <h4><span class="dashicons dashicons-performance" style="vertical-align: text-bottom; margin-right: 5px;"></span><?php esc_html_e("Cron Rate Limit Test", "vapt-security"); ?></h4>
+                                <p><?php
+                                    $cron_limit = isset($opts["cron_rate_limit"]) ? (int)$opts["cron_rate_limit"] : 60;
+                                    $cron_sim_count = ceil($cron_limit * 1.2);
+                                    printf(
+                                        esc_html__(
+                                            "Simulate rapid cron requests to verify throttling. Recommended simulation: %d requests.",
+                                            "vapt-security"
+                                        ),
+                                        $cron_sim_count
+                                    );
+                                    ?></p>
+                                <p>
+                                    <label for="vapt_cron_sim_count" style="margin-right: 5px; font-weight: 600;"><?php esc_html_e("Requests:", "vapt-security"); ?></label>
+                                    <input type="number" id="vapt_cron_sim_count" value="<?php echo (int)$cron_sim_count; ?>" min="1" step="1" style="width: 60px; margin-right: 5px;" autocomplete="off">
+
+                                    <button type="button" class="button button-secondary" id="vapt-run-cron-diagnostic">
+                                        <?php esc_html_e("Run Cron Test", "vapt-security"); ?>
+                                    </button>
+                                    <span id="vapt-cron-diagnostic-spinner" class="spinner" style="float: none; margin: 0 10px;"></span>
+                                </p>
+                                <div id="vapt-cron-diagnostic-result"></div>
                             </div>
                         </div>
 
                         <!-- Right Column: WP-Cron Settings -->
                         <div class="vapt-grid-col">
-                            <h3><?php esc_html_e("WP-Cron Settings", "vapt-security"); ?></h3>
+                            <h3><span class="dashicons dashicons-clock"></span> <?php esc_html_e("WP-Cron Settings", "vapt-security"); ?></h3>
                             <div class="settings-section">
                                 <?php do_settings_sections("vapt_security_cron"); ?>
                             </div>
 
-                            <div class="vapt-server-cron-info" style="background: #f9f9f9; padding: 15px; border: 1px solid #ccd0d4; border-left: 4px solid #72aee6; margin-top: 25px;">
-                                <h4 style="margin-top: 0;"><?php esc_html_e("Server Level Custom Cron", "vapt-security"); ?></h4>
-                                <p class="description" style="margin-bottom: 10px;"><?php esc_html_e("To ensure robust performance and reliability, we recommend disabling WP-Cron and setting up a real server-level cron job.", "vapt-security"); ?></p>
-                                <p><strong><?php esc_html_e("Example Command (every 30 mins):", "vapt-security"); ?></strong></p>
-                                <code style="display: block; padding: 10px; background: #fff; border: 1px solid #eee; border-radius: 4px; font-family: monospace; word-break: break-all; font-size: 11px;">*/30 * * * * wget -q -O - <?php echo esc_url(site_url("wp-cron.php?doing_wp_cron")); ?> >/dev/null 2>&1</code>
+                            <div class="settings-feature-box" style="margin-top: 25px;">
+                                <h4><span class="dashicons dashicons-visibility" style="vertical-align: text-bottom; margin-right: 5px;"></span><?php esc_html_e("Diagnostics & Evidence", "vapt-security"); ?></h4>
+                                <table class="vapt-diag-table" style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="padding: 5px 0;"><strong><?php esc_html_e("WP-Cron Disabled:", "vapt-security"); ?></strong></td>
+                                        <td style="text-align: right;"><?php echo defined('DISABLE_WP_CRON') && DISABLE_WP_CRON ? '<span style="color:green; font-weight:600;">' . esc_html__('Yes (Recommended)', 'vapt-security') . '</span>' : '<span style="color:orange; font-weight:600;">' . esc_html__('No (Default)', 'vapt-security') . '</span>'; ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 5px 0;"><strong><?php esc_html_e("Alternate Cron:", "vapt-security"); ?></strong></td>
+                                        <td style="text-align: right;"><?php echo defined('ALTERNATE_WP_CRON') && ALTERNATE_WP_CRON ? esc_html__('Active', 'vapt-security') : esc_html__('Inactive', 'vapt-security'); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 5px 0;"><strong><?php esc_html_e("Server IP Address:", "vapt-security"); ?></strong></td>
+                                        <td style="text-align: right;"><code><?php
+                                                                                $server_ip = $_SERVER['SERVER_ADDR'] ?? 'Unknown';
+                                                                                if ($server_ip === '::1') {
+                                                                                    $server_ip = gethostbyname(gethostname()) ?: '127.0.0.1';
+                                                                                }
+                                                                                echo esc_html($server_ip);
+                                                                                ?></code></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 5px 0;"><strong><?php esc_html_e("Next Scheduled Event:", "vapt-security"); ?></strong></td>
+                                        <td style="text-align: right;"><?php
+                                                                        $next = wp_next_scheduled('wp_version_check'); // Common event
+                                                                        echo $next ? date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $next) : esc_html__('None found', 'vapt-security');
+                                                                        ?></td>
+                                    </tr>
+                                </table>
+                                <p class="description" style="margin-top: 10px; font-size: 11px;">
+                                    <?php esc_html_e("Evidence data helps confirm if server-level triggers are reaching WordPress correctly.", "vapt-security"); ?>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (
+                VAPT_Features::is_enabled("input_validation") &&
+                defined("VAPT_FEATURE_INPUT_VALIDATION") &&
+                VAPT_FEATURE_INPUT_VALIDATION
+            ): ?>
+                <div id="tab-validation" class="vapt-security-tab-content">
+                    <div class="vapt-grid-row">
+                        <!-- Left Column: Validation Rules -->
+                        <div class="vapt-grid-col">
+                            <h3><span class="dashicons dashicons-filter"></span> <?php esc_html_e("Validation Rules", "vapt-security"); ?></h3>
+                            <div class="settings-section">
+                                <?php do_settings_sections("vapt_security_validation"); ?>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Form Integrations -->
+                        <div class="vapt-grid-col">
+                            <h3><span class="dashicons dashicons-forms"></span> <?php esc_html_e("Form Integrations", "vapt-security"); ?></h3>
+                            <div class="settings-section">
+                                <?php do_settings_sections("vapt_security_integrations"); ?>
                             </div>
                         </div>
                     </div>
@@ -233,12 +317,10 @@ $is_superadmin = VAPT_Security::is_superadmin();
                 VAPT_FEATURE_RATE_LIMITING
             ): ?>
                 <div id="tab-rate-limiter" class="vapt-security-tab-content">
-                    <h2>Rate Limiter Settings</h2>
-
                     <div class="vapt-grid-row">
                         <!-- Left Column: Settings -->
                         <div class="vapt-grid-col">
-                            <h3><?php esc_html_e('Settings', 'vapt-security'); ?></h3>
+                            <h3><span class="dashicons dashicons-shield"></span> <?php esc_html_e('Rate Limiter Settings', 'vapt-security'); ?></h3>
                             <div class="settings-section">
                                 <?php do_settings_sections("vapt_security_rate_limiter"); ?>
                             </div>
@@ -246,15 +328,15 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
                         <!-- Right Column: Diagnostics -->
                         <div class="vapt-grid-col">
-                            <h3 style="margin-top:0;"><?php esc_html_e(
-                                                            "Diagnostics",
-                                                            "vapt-security",
-                                                        ); ?></h3>
-                            <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; border-radius: 4px;">
-                                <h4><?php esc_html_e(
-                                        "Rate Limit Test",
-                                        "vapt-security",
-                                    ); ?></h4>
+                            <h3 style="margin-top:0;"><span class="dashicons dashicons-performance"></span> <?php esc_html_e(
+                                                                                                                "Diagnostics",
+                                                                                                                "vapt-security",
+                                                                                                            ); ?></h3>
+                            <div class="settings-feature-box">
+                                <h4><span class="dashicons dashicons-test-automation" style="vertical-align: text-bottom; margin-right: 5px;"></span><?php esc_html_e(
+                                                                                                                                                            "Rate Limit Test",
+                                                                                                                                                            "vapt-security",
+                                                                                                                                                        ); ?></h4>
                                 <p><?php
                                     $opts = $this->get_config();
                                     // Fix key mismatch: use rate_limit_max primarily
@@ -285,11 +367,11 @@ $is_superadmin = VAPT_Security::is_superadmin();
                                 </p>
                                 <div id="vapt-diagnostic-result"></div>
                             </div>
-                            <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; border-radius: 4px; margin-top: 15px;">
-                                <h4><?php esc_html_e(
-                                        "Active Integrations",
-                                        "vapt-security",
-                                    ); ?></h4>
+                            <div class="settings-feature-box" style="margin-top: 20px;">
+                                <h4><span class="dashicons dashicons-networking" style="vertical-align: text-bottom; margin-right: 5px;"></span><?php esc_html_e(
+                                                                                                                                                    "Active Integrations",
+                                                                                                                                                    "vapt-security",
+                                                                                                                                                ); ?></h4>
                                 <p><?php esc_html_e(
                                         "The following integrations are currently active and hooked into the security engine:",
                                         "vapt-security",
@@ -334,39 +416,14 @@ $is_superadmin = VAPT_Security::is_superadmin();
                 </div>
             <?php endif; ?>
 
-            <?php if (
-                VAPT_Features::is_enabled("input_validation") &&
-                defined("VAPT_FEATURE_INPUT_VALIDATION") &&
-                VAPT_FEATURE_INPUT_VALIDATION
-            ): ?>
-                <div id="tab-validation" class="vapt-security-tab-content">
-                    <h2><?php esc_html_e("Input Validation & Integrations", "vapt-security"); ?></h2>
-                    <div class="vapt-grid-row">
-                        <!-- Left Column: Validation Rules -->
-                        <div class="vapt-grid-col">
-                            <div class="settings-section">
-                                <?php do_settings_sections("vapt_security_validation"); ?>
-                            </div>
-                        </div>
-
-                        <!-- Right Column: Form Integrations -->
-                        <div class="vapt-grid-col">
-                            <div class="settings-section">
-                                <?php do_settings_sections("vapt_security_integrations"); ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
-
 
 
 
 
             <?php if (!empty($hardening_features)): ?>
                 <div id="tab-hardening" class="vapt-security-tab-content">
-                    <h2><?php esc_html_e("Server Hardening", "vapt-security"); ?></h2>
-                    <p><?php esc_html_e("Enable these hardening features to secure your WordPress installation against common attacks.", "vapt-security"); ?></p>
+                    <h3><span class="dashicons dashicons-lock"></span> <?php esc_html_e("Server Hardening", "vapt-security"); ?></h3>
+                    <p class="description" style="margin-bottom: 20px;"><?php esc_html_e("Enable these hardening features to secure your WordPress installation against common attacks.", "vapt-security"); ?></p>
 
                     <div class="vapt-hardening-grid">
                         <?php
@@ -410,18 +467,18 @@ $is_superadmin = VAPT_Security::is_superadmin();
                     $limiter = new VAPT_Rate_Limiter();
                     $limiter_stats = $limiter->get_stats();
                     ?>
-                    <h3><?php esc_html_e(
-                            "Rate Limiting Statistics",
-                            "vapt-security",
-                        ); ?></h3>
+                    <h3><span class="dashicons dashicons-chart-bar"></span> <?php esc_html_e(
+                                                                                "Rate Limiting Statistics",
+                                                                                "vapt-security",
+                                                                            ); ?></h3>
 
                     <div class="vapt-grid-row">
                         <!-- Regular Requests -->
                         <div class="vapt-grid-col">
-                            <h4><?php esc_html_e(
-                                    "Regular Request Statistics",
-                                    "vapt-security",
-                                ); ?></h4>
+                            <h4 class="vapt-stat-heading"><span class="dashicons dashicons-visibility"></span> <?php esc_html_e(
+                                                                                                                    "Regular Request Statistics",
+                                                                                                                    "vapt-security",
+                                                                                                                ); ?></h4>
                             <table class="statistics-table">
                                 <thead>
                                     <tr>
@@ -467,10 +524,10 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
                         <!-- Cron Requests -->
                         <div class="vapt-grid-col">
-                            <h4><?php esc_html_e(
-                                    "Cron Request Statistics",
-                                    "vapt-security",
-                                ); ?></h4>
+                            <h4 class="vapt-stat-heading"><span class="dashicons dashicons-update"></span> <?php esc_html_e(
+                                                                                                                "Cron Request Statistics",
+                                                                                                                "vapt-security",
+                                                                                                            ); ?></h4>
                             <table class="statistics-table">
                                 <thead>
                                     <tr>
@@ -543,10 +600,10 @@ $is_superadmin = VAPT_Security::is_superadmin();
                     $logger = new VAPT_Security_Logger();
                     $stats = $logger->get_statistics();
                     ?>
-                    <h3><?php esc_html_e(
-                            "Logging Statistics",
-                            "vapt-security",
-                        ); ?></h3>
+                    <h3><span class="dashicons dashicons-list-view"></span> <?php esc_html_e(
+                                                                                "Logging Statistics",
+                                                                                "vapt-security",
+                                                                            ); ?></h3>
                     <table class="statistics-table">
                         <tr>
                             <td><?php esc_html_e(
@@ -569,10 +626,10 @@ $is_superadmin = VAPT_Security::is_superadmin();
                     </table>
 
                     <?php if (!empty($stats["event_types"])): ?>
-                        <h4><?php esc_html_e(
-                                "Event Types",
-                                "vapt-security",
-                            ); ?></h4>
+                        <h4 class="vapt-stat-heading"><span class="dashicons dashicons-category"></span> <?php esc_html_e(
+                                                                                                                "Event Types",
+                                                                                                                "vapt-security",
+                                                                                                            ); ?></h4>
                         <table class="statistics-table">
                             <thead>
                                 <tr>
@@ -605,10 +662,10 @@ $is_superadmin = VAPT_Security::is_superadmin();
                     <?php endif; ?>
 
                     <?php if (!empty($stats["top_ips"])): ?>
-                        <h4><?php esc_html_e(
-                                "Top IPs",
-                                "vapt-security",
-                            ); ?></h4>
+                        <h4 class="vapt-stat-heading"><span class="dashicons dashicons-location"></span> <?php esc_html_e(
+                                                                                                                "Top IPs",
+                                                                                                                "vapt-security",
+                                                                                                            ); ?></h4>
                         <table class="statistics-table">
                             <thead>
                                 <tr>
@@ -668,16 +725,69 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
     .vapt-grid-col h3 {
         margin-top: 0;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
+        border-bottom: 2px solid #e2e4e7;
+        padding: 12px 15px;
+        margin-bottom: 20px;
+        color: #1d2327;
+        font-size: 1.1em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f6f7f7;
+        border-radius: 4px;
+        box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .vapt-grid-col h3 .dashicons {
+        color: #2271b1;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
     }
 
     .vapt-grid-col h4 {
-        margin-top: 0;
-        border-bottom: 1px solid #eee;
+        margin-top: 15px;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: #2c3338;
+    }
+
+    .vapt-stat-heading {
+        margin-top: 0 !important;
         padding-bottom: 10px;
-        margin-bottom: 15px;
+        border-bottom: 1px solid #f0f0f1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .vapt-stat-heading .dashicons {
+        color: #646970;
+    }
+
+    .settings-feature-box {
+        background: #fdfdfd;
+        border: 1px solid #ccd0d4;
+        padding: 15px;
+        border-radius: 6px;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .vapt-security-tab-content>h3 {
+        margin: 0 0 20px 0;
+        padding: 12px 15px;
+        border: 1px solid #ccd0d4;
+        background: #f6f7f7;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.3em;
+        color: #1d2327;
+    }
+
+    .vapt-security-tab-content>h3 .dashicons {
+        color: #2271b1;
     }
 
     @media (max-width: 782px) {
@@ -772,9 +882,94 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
     // Diagnostic Tool JS
     $('#vapt-run-diagnostic').on('click', function() {
+        var btn = $(this);
+        var spinner = $('#vapt-diagnostic-spinner');
+        var resultDiv = $('#vapt-diagnostic-result');
+
+        btn.prop('disabled', true);
+        spinner.addClass('is-active');
+        resultDiv.html('');
+
+        var requests = [];
+        var blocked = false;
+        var successCount = 0;
+        var blockedCount = 0;
+
+        <?php
+        // Get configured rate limit or default to 15
+        $opts = $this->get_config();
+        // Set test count to 1.5x the limit, rounded up
+        // Use correct key 'rate_limit_max' matching vapt-security.php registry
+        $rl_val = isset($opts["rate_limit_max"]) ? (int)$opts["rate_limit_max"] : (isset($opts["vapt_rate_limit_requests"]) ? (int)$opts["vapt_rate_limit_requests"] : 15);
+        $rate_limit = ($rl_val < 1) ? 15 : $rl_val;
+
+        $test_count = ceil($rate_limit * 1.5);
+        ?>
+        var rateLimitSetting = <?php echo (int)$rate_limit; ?>;
+        var totalRequests = parseInt($('#vapt_sim_count').val()) || <?php echo (int)$test_count; ?>;
+
+        if (totalRequests < 1) {
+            alert('Please enter a valid number of requests.');
+            btn.prop('disabled', false);
+            spinner.removeClass('is-active');
+            return;
+        }
+
+        function sendRequest(i) {
+            return $.ajax({
+                url: ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'vapt_form_submit', // Target the protected action
+                    nonce: 'dummy_nonce_diagnostic', // Rate Limit runs BEFORE Nonce check
+                    test_mode: true
+                }
+            }).always(function(data, textStatus, jqXHR) {
+                // Check for 429 status or specific error message
+                if (jqXHR.status === 429 || (data && data.success === false && data.data && data.data.message && data.data.message.indexOf('Too many') !== -1)) {
+                    blocked = true;
+                    blockedCount++;
+                } else {
+                    successCount++;
+                }
+            });
+        }
+
+        var promises = [];
+        for (var i = 0; i < totalRequests; i++) {
+            promises.push(sendRequest(i));
+        }
+
+        $.when.apply($, promises).always(function() {
+            btn.prop('disabled', false);
+            spinner.removeClass('is-active');
+
+            if (blocked) {
+                resultDiv.html('<div class="notice notice-success inline"><p><strong><?php esc_html_e(
+                                                                                            "Success:",
+                                                                                            "vapt-security",
+                                                                                        ); ?></strong> <?php esc_html_e(
+                                                                                                            "Rate Limiting is WORKING. Requests were blocked after the limit was exceeded.",
+                                                                                                            "vapt-security",
+                                                                                                        ); ?> (' + blockedCount + ' blocked)</p></div>');
+            } else {
+                resultDiv.html('<div class="notice notice-error inline"><p><strong><?php esc_html_e(
+                                                                                        "Warning:",
+                                                                                        "vapt-security",
+                                                                                    ); ?></strong> <?php esc_html_e(
+                                                                                                        "Rate Limiting did NOT trigger. Ensure the limit is low enough (e.g., 10 requests/min) for this test.",
+                                                                                                        "vapt-security",
+                                                                                                    ); ?></p></div>');
+            }
+        });
+    });
+
+    // Cron Diagnostic Tool JS
+    $('#vapt-run-cron-diagnostic').on('click', function() {
     var btn = $(this);
-    var spinner = $('#vapt-diagnostic-spinner');
-    var resultDiv = $('#vapt-diagnostic-result');
+    var spinner = $('#vapt-cron-diagnostic-spinner');
+    var resultDiv = $('#vapt-cron-diagnostic-result');
+    var cronUrl = '<?php echo esc_url(site_url("wp-cron.php")); ?>?doing_wp_cron=' + Date.now();
 
     btn.prop('disabled', true);
     spinner.addClass('is-active');
@@ -784,39 +979,15 @@ $is_superadmin = VAPT_Security::is_superadmin();
     var blocked = false;
     var successCount = 0;
     var blockedCount = 0;
+    var totalRequests = parseInt($('#vapt_cron_sim_count').val()) || 60;
 
-    <?php
-    // Get configured rate limit or default to 15
-    $opts = $this->get_config();
-    // Set test count to 1.5x the limit, rounded up
-    // Use correct key 'rate_limit_max' matching vapt-security.php registry
-    $rl_val = isset($opts["rate_limit_max"]) ? (int)$opts["rate_limit_max"] : (isset($opts["vapt_rate_limit_requests"]) ? (int)$opts["vapt_rate_limit_requests"] : 15);
-    $rate_limit = ($rl_val < 1) ? 15 : $rl_val;
-
-    $test_count = ceil($rate_limit * 1.5);
-    ?>
-    var rateLimitSetting = <?php echo (int)$rate_limit; ?>;
-    var totalRequests = parseInt($('#vapt_sim_count').val()) || <?php echo (int)$test_count; ?>;
-
-    if (totalRequests < 1) {
-        alert('Please enter a valid number of requests.');
-        btn.prop('disabled', false);
-        spinner.removeClass('is-active');
-        return;
-    }
-
-    function sendRequest(i) {
+    function sendCronRequest(i) {
         return $.ajax({
-            url: ajaxurl,
-            method: 'POST',
-            data: {
-                action: 'vapt_form_submit', // Target the protected action
-                nonce: 'dummy_nonce_diagnostic', // Rate Limit runs BEFORE Nonce check
-                test_mode: true
-            }
+            url: cronUrl,
+            method: 'GET',
+            cache: false
         }).always(function(data, textStatus, jqXHR) {
-            // Check for 429 status or specific error message
-            if (jqXHR.status === 429 || (data && data.success === false && data.data && data.data.message && data.data.message.indexOf('Too many') !== -1)) {
+            if (jqXHR.status === 429) {
                 blocked = true;
                 blockedCount++;
             } else {
@@ -827,7 +998,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
     var promises = [];
     for (var i = 0; i < totalRequests; i++) {
-        promises.push(sendRequest(i));
+        promises.push(sendCronRequest(i));
     }
 
     $.when.apply($, promises).always(function() {
@@ -835,24 +1006,11 @@ $is_superadmin = VAPT_Security::is_superadmin();
         spinner.removeClass('is-active');
 
         if (blocked) {
-            resultDiv.html('<div class="notice notice-success inline"><p><strong><?php esc_html_e(
-                                                                                        "Success:",
-                                                                                        "vapt-security",
-                                                                                    ); ?></strong> <?php esc_html_e(
-                                                                                                        "Rate Limiting is WORKING. Requests were blocked after the limit was exceeded.",
-                                                                                                        "vapt-security",
-                                                                                                    ); ?> (' + blockedCount + ' blocked)</p></div>');
+            resultDiv.html('<div class="notice notice-success inline"><p><strong><?php esc_html_e("Success:", "vapt-security"); ?></strong> <?php esc_html_e("Cron Rate Limiting is ACTIVE. Requests were blocked after reaching the hourly limit.", "vapt-security"); ?> (' + blockedCount + ' blocked)</p></div>');
         } else {
-            resultDiv.html('<div class="notice notice-error inline"><p><strong><?php esc_html_e(
-                                                                                    "Warning:",
-                                                                                    "vapt-security",
-                                                                                ); ?></strong> <?php esc_html_e(
-                                                                                                    "Rate Limiting did NOT trigger. Ensure the limit is low enough (e.g., 10 requests/min) for this test.",
-                                                                                                    "vapt-security",
-                                                                                                ); ?></p></div>');
+            resultDiv.html('<div class="notice notice-error inline"><p><strong><?php esc_html_e("Warning:", "vapt-security"); ?></strong> <?php esc_html_e("Cron Limiter did NOT trigger. Checked ", "vapt-security"); ?>' + totalRequests + '<?php esc_html_e(" requests. Try lowering the Cron Limit setting temporarily to test.", "vapt-security"); ?></p></div>');
         }
     });
     });
-
     });
 </script>

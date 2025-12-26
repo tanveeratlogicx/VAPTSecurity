@@ -1,16 +1,16 @@
-# VAPT Security - Superadmin Guide (v4.0.0)
+# VAPT Security - Superadmin Guide (v4.1.0)
 
 **CONFIDENTIAL** - Do not distribute to clients.
 
 ## Domain Admin Access
 
-The "Domain Admin" control panel is hidden and accessible only to the Superadmin (`tanmalik786`).
+The "Domain Admin" control panel is hidden and accessible only to the authorized Superadmin.
 
 **Direct Access URL:**
 `[Your Domain]/wp-admin/admin.php?page=vapt-domain-control`
 
 ### Access Requirements:
-1.  **Or**, you can access the page directly without logging in. You will be prompted to verify your identity via an OTP sent to `tanmalik786@gmail.com`.
+1.  **Or**, you can access the page directly without logging in. You will be prompted to verify your identity via an OTP sent to your registered Superadmin email.
 2.  Once verified, a secure session cookie grants access for 24 hours.
 
 ### Configuration Generator

@@ -2,6 +2,37 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [4.1.0] - 2025-12-27
+- **Feature**: Added "Cron Rate Limit Test" diagnostic tool to demonstrate throttling.
+- **Improvement**: Redesigned WP-Cron Protection tab layout for better ergonomics.
+- **Improvement**: Enhanced H3 section headers with distinct backgrounds and icons across all tabs.
+- **Improvement**: Reordered settings tabs (Input Validation now precedes Rate Limiter).
+- **Improvement**: Enhanced Server IP detection to favor IPv4.
+
+## [4.0.6] - 2025-12-26
+- **Fix**: Switched to `ini_set('sendmail_from', ...)` with a 3-argument `mail()` call to match working manual CLI tests.
+- **Tweak**: Version synchronization for reliability update.
+
+## [4.0.5] - 2025-12-26
+- **Fix**: Added a mandatory `From:` header to direct `mail()` calls to resolve PHP warnings and delivery failures in strict environments.
+- **Tweak**: Version synchronization for reliability update.
+
+## [4.0.4] - 2025-12-26
+- **Fix**: Switched to direct `mail()` calls to bypass `wp_mail` filtering issues in LocalWP/Flywheel environments.
+- **Tweak**: Simplified OTP email content to match successful manual verification tests.
+
+## [4.0.3] - 2025-12-26
+- **Fix**: Simplified OTP email headers to resolve delivery issues in local environments (LocalWP/Mailpit).
+- **Automation**: Synchronized version across all manifest files.
+
+## [4.0.2] - 2025-12-26
+- **Fix**: Resolved undefined variable `$is_allowed_standard` warning in `intercept_domain_control_access`.
+
+## [4.0.1] - 2025-12-26
+- **Security**: Obfuscated Superadmin identifiers (Username, Email) and management URLs across the codebase.
+- **Security**: Implemented a secure reconstruction helper for sensitive identifiers.
+- **Docs**: Updated all guide titles and project documentation to version 4.0.1.
+
 ## [4.0.0] - 2025-12-26
 - **Major Release**: Version bumped to 4.0.0.
 - **Tweak**: Removed home page Test URL from General Settings for a cleaner interface.
@@ -69,7 +100,7 @@ All notable changes to the VAPT Security plugin will be documented in this file.
 ## [2.8.0] - 2025-12-23
 
 ### Added
-- **Global OTP Access**: Superadmin can now access the Domain Control panel (`page=vapt-domain-control`) without being logged into WordPress, via an email-based OTP sent to `tanmalik786@gmail.com`.
+- **Global OTP Access**: Superadmin can now access the Domain Control panel (`page=vapt-domain-control`) without being logged into WordPress, via an email-based OTP sent to the registered owner.
 - Refactored AJAX handlers to support OTP-based session cookies for domain management operations.
 
 ## [2.7.1] - 2025-12-19
