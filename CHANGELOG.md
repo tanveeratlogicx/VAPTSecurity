@@ -2,6 +2,14 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [3.0.7] - 2025-12-26
+### Changed
+- **UI Refactor**: Converted the "Statistics" tab into a cleaner sub-tabbed interface, separating "Rate Limiting" and "Logging Statistics".
+- **UX Improvement**: "VAPT Security Settings" page now uses AJAX for saving, preventing page reloads and providing a smoother experience.
+- **Security Logging**: "Security Logging" is now an always-on feature. The toggle has been removed from the Domain Admin settings to ensure continuous security monitoring.
+- **Security Logging**: Removed the dedicated "Security Logging" tab; statistics are now consolidated under the "Statistics" tab.
+- **UI Improvement**: Implemented responsive 2-column grid layouts for "Rate Limiter", "WP-Cron Protection", and "Input Validation" tabs.
+
 ## [3.0.6] - 2025-12-25
 - Feature: Added independent "Admin Hardening Toggles" allowing admins to control authorized hardening features.
 - Feature: Added detailed "Server Hardening" descriptions and fully qualified verification URLs.

@@ -12,16 +12,19 @@ class VAPT_Features
 
     // Defined features and their defaults
     private static $defined_features = [
+        // Core Modules (Tabs) - Enabled by default
         'rate_limiting'    => true,
         'input_validation' => true,
         'cron_protection'  => true,
-        'security_logging' => true,
-        'disable_xmlrpc'   => true,
-        'disable_user_enum' => true,
-        'disable_file_edit' => true,
-        'hide_wp_version'  => true,
-        'security_headers' => true,
-        'restrict_rest_api' => true,
+        // 'security_logging' => true, // Removed: Always enabled
+
+        // Hardening Toggles - Disabled by default (Must be authorized by Superadmin)
+        'disable_xmlrpc'   => false,
+        'disable_user_enum' => false,
+        'disable_file_edit' => false,
+        'hide_wp_version'  => false,
+        'security_headers' => false,
+        'restrict_rest_api' => false,
     ];
 
     /**
@@ -58,6 +61,9 @@ class VAPT_Features
      */
     public static function is_enabled($slug)
     {
+        if ($slug === 'security_logging') {
+            return true;
+        }
         $active = self::get_active_features();
         return ! empty($active[$slug]);
     }

@@ -39,7 +39,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
     }
     ?>
 
-    <form method="post" action="options.php">
+    <form method="post" action="options.php" id="vapt-settings-form">
         <?php
         // Output security fields.
         settings_fields("vapt_security_options_group");
@@ -168,16 +168,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
                                                                             ); ?></a></li>
                 <?php endif; ?>
 
-                <?php if (
-                    VAPT_Features::is_enabled("security_logging") &&
-                    defined("VAPT_FEATURE_SECURITY_LOGGING") &&
-                    VAPT_FEATURE_SECURITY_LOGGING
-                ): ?>
-                    <li class="vapt-security-tab"><a href="#tab-logging"><?php esc_html_e(
-                                                                                "Security Logging",
-                                                                                "vapt-security",
-                                                                            ); ?></a></li>
-                <?php endif; ?>
+
                 <?php if (!empty($hardening_features)): ?>
                     <li class="vapt-security-tab"><a href="#tab-hardening"><?php esc_html_e(
                                                                                 "Hardening",
@@ -197,18 +188,29 @@ $is_superadmin = VAPT_Security::is_superadmin();
                 VAPT_FEATURE_WP_CRON_PROTECTION
             ): ?>
                 <div id="tab-general" class="vapt-security-tab-content">
-                    <div class="settings-section">
-                        <?php do_settings_sections("vapt_security_general"); ?>
+                    <h2><?php esc_html_e("General & Cron Settings", "vapt-security"); ?></h2>
+                    <div class="vapt-grid-row">
+                        <!-- Left Column: General Configuration -->
+                        <div class="vapt-grid-col">
+                            <h3><?php esc_html_e("General Configuration", "vapt-security"); ?></h3>
+                            <div class="settings-section">
+                                <?php do_settings_sections("vapt_security_general"); ?>
+                            </div>
+                        </div>
 
-                        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
+                        <!-- Right Column: WP-Cron Settings -->
+                        <div class="vapt-grid-col">
+                            <h3><?php esc_html_e("WP-Cron Settings", "vapt-security"); ?></h3>
+                            <div class="settings-section">
+                                <?php do_settings_sections("vapt_security_cron"); ?>
+                            </div>
 
-                        <?php do_settings_sections("vapt_security_cron"); ?>
-
-                        <div class="vapt-server-cron-info" style="background: #fff; padding: 20px; border: 1px solid #ccd0d4; border-left: 4px solid #72aee6; margin-top: 25px;">
-                            <h3 style="margin-top: 0;"><?php esc_html_e("Server Level Custom Cron", "vapt-security"); ?></h3>
-                            <p><?php esc_html_e("To ensure robust performance and reliability, we recommend disabling WP-Cron and setting up a real server-level cron job.", "vapt-security"); ?></p>
-                            <p><strong><?php esc_html_e("Example Command (runs every 30 minutes):", "vapt-security"); ?></strong></p>
-                            <code style="display: block; padding: 15px; background: #f0f0f1; border-radius: 4px; font-family: monospace;">*/30 * * * * wget -q -O - <?php echo esc_url(site_url("wp-cron.php?doing_wp_cron")); ?> >/dev/null 2>&1</code>
+                            <div class="vapt-server-cron-info" style="background: #f9f9f9; padding: 15px; border: 1px solid #ccd0d4; border-left: 4px solid #72aee6; margin-top: 25px;">
+                                <h4 style="margin-top: 0;"><?php esc_html_e("Server Level Custom Cron", "vapt-security"); ?></h4>
+                                <p class="description" style="margin-bottom: 10px;"><?php esc_html_e("To ensure robust performance and reliability, we recommend disabling WP-Cron and setting up a real server-level cron job.", "vapt-security"); ?></p>
+                                <p><strong><?php esc_html_e("Example Command (every 30 mins):", "vapt-security"); ?></strong></p>
+                                <code style="display: block; padding: 10px; background: #fff; border: 1px solid #eee; border-radius: 4px; font-family: monospace; word-break: break-all; font-size: 11px;">*/30 * * * * wget -q -O - <?php echo esc_url(site_url("wp-cron.php?doing_wp_cron")); ?> >/dev/null 2>&1</code>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -222,100 +224,102 @@ $is_superadmin = VAPT_Security::is_superadmin();
                 <div id="tab-rate-limiter" class="vapt-security-tab-content">
                     <h2>Rate Limiter Settings</h2>
 
-                    <!-- Nested Tabs for Rate Limiter -->
-                    <!-- Removed sub-tabs as per user request -->
-
-                    <?php do_settings_sections("vapt_security_rate_limiter"); ?>
-
-                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
-
-                    <!-- Sub Tab 2: Diagnostics -->
-                    <div id="sub-tab-rl-diagnostics">
-                        <h3 style="margin-top:0;"><?php esc_html_e(
-                                                        "Diagnostics",
-                                                        "vapt-security",
-                                                    ); ?></h3>
-                        <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; border-radius: 4px;">
-                            <h4><?php esc_html_e(
-                                    "Rate Limit Test",
-                                    "vapt-security",
-                                ); ?></h4>
-                            <p><?php
-                                $opts = $this->get_config();
-                                // Fix key mismatch: use rate_limit_max primarily
-                                $rl_val = isset($opts["rate_limit_max"]) ? (int)$opts["rate_limit_max"] : (isset($opts["vapt_rate_limit_requests"]) ? (int)$opts["vapt_rate_limit_requests"] : 15);
-                                $rate_limit = ($rl_val < 1) ? 15 : $rl_val;
-
-                                $sim_count = ceil($rate_limit * 1.5);
-                                printf(
-                                    esc_html__(
-                                        "Click the button below to simulate %d rapid requests. If Rate Limiting is working, it should block requests after the limit (%d) is reached.",
-                                        "vapt-security",
-                                    ),
-                                    $sim_count,
-                                    $rate_limit
-                                ); ?></p>
-                            <p>
-                                <label for="vapt_sim_count" style="margin-right: 5px; font-weight: 600;"><?php esc_html_e("Simulation Request Count", "vapt-security"); ?></label>
-                                <input type="number" id="vapt_sim_count" value="<?php echo (int)$sim_count; ?>" min="1" step="1" style="width: 60px; margin-right: 5px;" autocomplete="off">
-                                <span style="margin-right: 15px;"><?php esc_html_e("per minute", "vapt-security"); ?></span>
-
-                                <button type="button" class="button button-secondary" id="vapt-run-diagnostic">
-                                    <?php esc_html_e(
-                                        "Run Diagnostic Test",
-                                        "vapt-security",
-                                    ); ?>
-                                </button>
-                                <span id="vapt-diagnostic-spinner" class="spinner" style="float: none; margin: 0 10px;"></span>
-                            </p>
-                            <div id="vapt-diagnostic-result"></div>
+                    <div class="vapt-grid-row">
+                        <!-- Left Column: Settings -->
+                        <div class="vapt-grid-col">
+                            <h3><?php esc_html_e('Settings', 'vapt-security'); ?></h3>
+                            <div class="settings-section">
+                                <?php do_settings_sections("vapt_security_rate_limiter"); ?>
+                            </div>
                         </div>
-                        <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; border-radius: 4px; margin-top: 15px;">
-                            <h4><?php esc_html_e(
-                                    "Active Integrations",
-                                    "vapt-security",
-                                ); ?></h4>
-                            <p><?php esc_html_e(
-                                    "The following integrations are currently active and hooked into the security engine:",
-                                    "vapt-security",
-                                ); ?></p>
-                            <ul style="list-style: disc; margin-left: 20px;">
-                                <?php
-                                $active_integrations = [];
-                                $opts = $this->get_config();
 
-                                if (!empty($opts["vapt_integration_cf7"])) {
-                                    $active_integrations[] = "Contact Form 7";
-                                }
-                                if (!empty($opts["vapt_integration_elementor"])) {
-                                    $active_integrations[] = "Elementor Forms";
-                                }
-                                if (!empty($opts["vapt_integration_wpforms"])) {
-                                    $active_integrations[] = "WPForms";
-                                }
-                                if (!empty($opts["vapt_integration_gravity"])) {
-                                    $active_integrations[] = "Gravity Forms";
-                                }
+                        <!-- Right Column: Diagnostics -->
+                        <div class="vapt-grid-col">
+                            <h3 style="margin-top:0;"><?php esc_html_e(
+                                                            "Diagnostics",
+                                                            "vapt-security",
+                                                        ); ?></h3>
+                            <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; border-radius: 4px;">
+                                <h4><?php esc_html_e(
+                                        "Rate Limit Test",
+                                        "vapt-security",
+                                    ); ?></h4>
+                                <p><?php
+                                    $opts = $this->get_config();
+                                    // Fix key mismatch: use rate_limit_max primarily
+                                    $rl_val = isset($opts["rate_limit_max"]) ? (int)$opts["rate_limit_max"] : (isset($opts["vapt_rate_limit_requests"]) ? (int)$opts["vapt_rate_limit_requests"] : 15);
+                                    $rate_limit = ($rl_val < 1) ? 15 : $rl_val;
 
-                                if (empty($active_integrations)) {
-                                    echo "<li><em>" .
+                                    $sim_count = ceil($rate_limit * 1.5);
+                                    printf(
                                         esc_html__(
-                                            "No integrations enabled.",
+                                            "Click the button below to simulate %d rapid requests. If Rate Limiting is working, it should block requests after the limit (%d) is reached.",
                                             "vapt-security",
-                                        ) .
-                                        "</em></li>";
-                                } else {
-                                    foreach ($active_integrations as $int) {
-                                        echo '<li style="color: #00a32a; font-weight: bold;">' .
-                                            esc_html($int) .
-                                            ' <span class="dashicons dashicons-yes" style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle;"></span></li>';
-                                    }
-                                }
-                                ?>
-                            </ul>
-                        </div>
-                    </div> <!-- End Diagnostics Wrapper -->
+                                        ),
+                                        $sim_count,
+                                        $rate_limit
+                                    ); ?></p>
+                                <p>
+                                    <label for="vapt_sim_count" style="margin-right: 5px; font-weight: 600;"><?php esc_html_e("Simulation Request Count", "vapt-security"); ?></label>
+                                    <input type="number" id="vapt_sim_count" value="<?php echo (int)$sim_count; ?>" min="1" step="1" style="width: 60px; margin-right: 5px;" autocomplete="off">
+                                    <span style="margin-right: 15px;"><?php esc_html_e("per minute", "vapt-security"); ?></span>
 
+                                    <button type="button" class="button button-secondary" id="vapt-run-diagnostic">
+                                        <?php esc_html_e(
+                                            "Run Diagnostic Test",
+                                            "vapt-security",
+                                        ); ?>
+                                    </button>
+                                    <span id="vapt-diagnostic-spinner" class="spinner" style="float: none; margin: 0 10px;"></span>
+                                </p>
+                                <div id="vapt-diagnostic-result"></div>
+                            </div>
+                            <div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; border-radius: 4px; margin-top: 15px;">
+                                <h4><?php esc_html_e(
+                                        "Active Integrations",
+                                        "vapt-security",
+                                    ); ?></h4>
+                                <p><?php esc_html_e(
+                                        "The following integrations are currently active and hooked into the security engine:",
+                                        "vapt-security",
+                                    ); ?></p>
+                                <ul style="list-style: disc; margin-left: 20px;">
+                                    <?php
+                                    $active_integrations = [];
+                                    $opts = $this->get_config();
+
+                                    if (!empty($opts["vapt_integration_cf7"])) {
+                                        $active_integrations[] = "Contact Form 7";
+                                    }
+                                    if (!empty($opts["vapt_integration_elementor"])) {
+                                        $active_integrations[] = "Elementor Forms";
+                                    }
+                                    if (!empty($opts["vapt_integration_wpforms"])) {
+                                        $active_integrations[] = "WPForms";
+                                    }
+                                    if (!empty($opts["vapt_integration_gravity"])) {
+                                        $active_integrations[] = "Gravity Forms";
+                                    }
+
+                                    if (empty($active_integrations)) {
+                                        echo "<li><em>" .
+                                            esc_html__(
+                                                "No integrations enabled.",
+                                                "vapt-security",
+                                            ) .
+                                            "</em></li>";
+                                    } else {
+                                        foreach ($active_integrations as $int) {
+                                            echo '<li style="color: #00a32a; font-weight: bold;">' .
+                                                esc_html($int) .
+                                                ' <span class="dashicons dashicons-yes" style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle;"></span></li>';
+                                        }
+                                    }
+                                    ?>
+                                </ul>
+                            </div>
+                        </div>
+                    </div> <!-- End Grid Row -->
                 </div>
             <?php endif; ?>
 
@@ -325,129 +329,30 @@ $is_superadmin = VAPT_Security::is_superadmin();
                 VAPT_FEATURE_INPUT_VALIDATION
             ): ?>
                 <div id="tab-validation" class="vapt-security-tab-content">
-                    <div class="settings-section">
-                        <?php do_settings_sections(
-                            "vapt_security_validation",
-                        ); ?>
+                    <h2><?php esc_html_e("Input Validation & Integrations", "vapt-security"); ?></h2>
+                    <div class="vapt-grid-row">
+                        <!-- Left Column: Validation Rules -->
+                        <div class="vapt-grid-col">
+                            <h3><?php esc_html_e("Validation Rules", "vapt-security"); ?></h3>
+                            <div class="settings-section">
+                                <?php do_settings_sections("vapt_security_validation"); ?>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Form Integrations -->
+                        <div class="vapt-grid-col">
+                            <h3><?php esc_html_e("Form Integrations", "vapt-security"); ?></h3>
+                            <div class="settings-section">
+                                <?php do_settings_sections("vapt_security_integrations"); ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
 
 
 
-            <?php if (
-                VAPT_Features::is_enabled("security_logging") &&
-                defined("VAPT_FEATURE_SECURITY_LOGGING") &&
-                VAPT_FEATURE_SECURITY_LOGGING
-            ): ?>
-                <div id="tab-logging" class="vapt-security-tab-content">
-                    <div class="settings-section">
-                        <?php do_settings_sections("vapt_security_logging"); ?>
 
-                        <?php
-                        // Display log statistics
-                        $logger = new VAPT_Security_Logger();
-                        $stats = $logger->get_statistics();
-                        ?>
-                        <h3><?php esc_html_e(
-                                "Logging Statistics",
-                                "vapt-security",
-                            ); ?></h3>
-                        <table class="statistics-table">
-                            <tr>
-                                <td><?php esc_html_e(
-                                        "Total Events Logged:",
-                                        "vapt-security",
-                                    ); ?></td>
-                                <td><?php echo esc_html(
-                                        $stats["total_events"],
-                                    ); ?></td>
-                            </tr>
-                            <tr>
-                                <td><?php esc_html_e(
-                                        "Events in Last 24 Hours:",
-                                        "vapt-security",
-                                    ); ?></td>
-                                <td><?php echo esc_html(
-                                        $stats["last_24_hours"],
-                                    ); ?></td>
-                            </tr>
-                        </table>
-
-                        <?php if (!empty($stats["event_types"])): ?>
-                            <h4><?php esc_html_e(
-                                    "Event Types",
-                                    "vapt-security",
-                                ); ?></h4>
-                            <table class="statistics-table">
-                                <thead>
-                                    <tr>
-                                        <th><?php esc_html_e(
-                                                "Event Type",
-                                                "vapt-security",
-                                            ); ?></th>
-                                        <th><?php esc_html_e(
-                                                "Count",
-                                                "vapt-security",
-                                            ); ?></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach (
-                                        $stats["event_types"]
-                                        as $type => $count
-                                    ): ?>
-                                        <tr>
-                                            <td><?php echo esc_html(
-                                                    $type,
-                                                ); ?></td>
-                                            <td><?php echo esc_html(
-                                                    $count,
-                                                ); ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        <?php endif; ?>
-
-                        <?php if (!empty($stats["top_ips"])): ?>
-                            <h4><?php esc_html_e(
-                                    "Top IPs",
-                                    "vapt-security",
-                                ); ?></h4>
-                            <table class="statistics-table">
-                                <thead>
-                                    <tr>
-                                        <th><?php esc_html_e(
-                                                "IP Address",
-                                                "vapt-security",
-                                            ); ?></th>
-                                        <th><?php esc_html_e(
-                                                "Event Count",
-                                                "vapt-security",
-                                            ); ?></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach (
-                                        $stats["top_ips"]
-                                        as $ip => $count
-                                    ): ?>
-                                        <tr>
-                                            <td><?php echo esc_html(
-                                                    $ip,
-                                                ); ?></td>
-                                            <td><?php echo esc_html(
-                                                    $count,
-                                                ); ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
 
             <?php if (!empty($hardening_features)): ?>
                 <div id="tab-hardening" class="vapt-security-tab-content">
@@ -461,6 +366,9 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
                         // Admin Settings (Activation Control by Admin)
                         $admin_settings = get_option('vapt_hardening_settings', []);
+                        if (!is_array($admin_settings)) {
+                            $admin_settings = [];
+                        }
 
                         foreach ($hardening_features as $slug => $data):
                             // 1. Availability Check: Is this feature allowed for the domain?
@@ -511,97 +419,106 @@ $is_superadmin = VAPT_Security::is_superadmin();
                             "vapt-security",
                         ); ?></h3>
 
-                    <h4><?php esc_html_e(
-                            "Regular Request Statistics",
-                            "vapt-security",
-                        ); ?></h4>
-                    <table class="statistics-table">
-                        <thead>
-                            <tr>
-                                <th><?php esc_html_e(
-                                        "IP Address",
-                                        "vapt-security",
-                                    ); ?></th>
-                                <th><?php esc_html_e(
-                                        "Request Count",
-                                        "vapt-security",
-                                    ); ?></th>
-                                <th><?php esc_html_e(
-                                        "Actions",
-                                        "vapt-security",
-                                    ); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach (
-                                $limiter_stats["regular_requests"]
-                                as $ip => $requests
-                            ): ?>
-                                <tr>
-                                    <td><?php echo esc_html($ip); ?></td>
-                                    <td><?php echo esc_html(
-                                            count($requests),
-                                        ); ?></td>
-                                    <td>
-                                        <button type="button" class="button vapt-reset-ip" data-ip="<?php echo esc_attr(
-                                                                                                        $ip,
-                                                                                                    ); ?>">
-                                            <?php esc_html_e(
-                                                "Reset Data",
+                    <div class="vapt-grid-row">
+                        <!-- Regular Requests -->
+                        <div class="vapt-grid-col">
+                            <h4><?php esc_html_e(
+                                    "Regular Request Statistics",
+                                    "vapt-security",
+                                ); ?></h4>
+                            <table class="statistics-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e(
+                                                "IP Address",
                                                 "vapt-security",
-                                            ); ?>
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                            ); ?></th>
+                                        <th><?php esc_html_e(
+                                                "Request Count",
+                                                "vapt-security",
+                                            ); ?></th>
+                                        <th><?php esc_html_e(
+                                                "Actions",
+                                                "vapt-security",
+                                            ); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach (
+                                        $limiter_stats["regular_requests"]
+                                        as $ip => $requests
+                                    ): ?>
+                                        <tr>
+                                            <td><?php echo esc_html($ip); ?></td>
+                                            <td><?php echo esc_html(
+                                                    count($requests),
+                                                ); ?></td>
+                                            <td>
+                                                <button type="button" class="button vapt-reset-ip" data-ip="<?php echo esc_attr(
+                                                                                                                $ip,
+                                                                                                            ); ?>">
+                                                    <?php esc_html_e(
+                                                        "Reset Data",
+                                                        "vapt-security",
+                                                    ); ?>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <h4><?php esc_html_e(
-                            "Cron Request Statistics",
-                            "vapt-security",
-                        ); ?></h4>
-                    <table class="statistics-table">
-                        <thead>
-                            <tr>
-                                <th><?php esc_html_e(
-                                        "IP Address",
-                                        "vapt-security",
-                                    ); ?></th>
-                                <th><?php esc_html_e(
-                                        "Request Count",
-                                        "vapt-security",
-                                    ); ?></th>
-                                <th><?php esc_html_e(
-                                        "Actions",
-                                        "vapt-security",
-                                    ); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach (
-                                $limiter_stats["cron_requests"]
-                                as $ip => $requests
-                            ): ?>
-                                <tr>
-                                    <td><?php echo esc_html($ip); ?></td>
-                                    <td><?php echo esc_html(
-                                            count($requests),
-                                        ); ?></td>
-                                    <td>
-                                        <button type="button" class="button vapt-reset-ip" data-ip="<?php echo esc_attr(
-                                                                                                        $ip,
-                                                                                                    ); ?>">
-                                            <?php esc_html_e(
-                                                "Reset Data",
+                        <!-- Cron Requests -->
+                        <div class="vapt-grid-col">
+                            <h4><?php esc_html_e(
+                                    "Cron Request Statistics",
+                                    "vapt-security",
+                                ); ?></h4>
+                            <table class="statistics-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e(
+                                                "IP Address",
                                                 "vapt-security",
-                                            ); ?>
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                            ); ?></th>
+                                        <th><?php esc_html_e(
+                                                "Request Count",
+                                                "vapt-security",
+                                            ); ?></th>
+                                        <th><?php esc_html_e(
+                                                "Actions",
+                                                "vapt-security",
+                                            ); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach (
+                                        $limiter_stats["cron_requests"]
+                                        as $ip => $requests
+                                    ): ?>
+                                        <tr>
+                                            <td><?php echo esc_html($ip); ?></td>
+                                            <td><?php echo esc_html(
+                                                    count($requests),
+                                                ); ?></td>
+                                            <td>
+                                                <button type="button" class="button vapt-reset-ip" data-ip="<?php echo esc_attr(
+                                                                                                                $ip,
+                                                                                                            ); ?>">
+                                                    <?php esc_html_e(
+                                                        "Reset Data",
+                                                        "vapt-security",
+                                                    ); ?>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div><!-- .vapt-grid-row -->
+
 
                     <script>
                         jQuery(document).ready(function($) {
@@ -622,6 +539,110 @@ $is_superadmin = VAPT_Security::is_superadmin();
                             });
                         });
                     </script>
+
+                    <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ddd;">
+
+                    <?php
+                    // Display log statistics
+                    $logger = new VAPT_Security_Logger();
+                    $stats = $logger->get_statistics();
+                    ?>
+                    <h3><?php esc_html_e(
+                            "Logging Statistics",
+                            "vapt-security",
+                        ); ?></h3>
+                    <table class="statistics-table">
+                        <tr>
+                            <td><?php esc_html_e(
+                                    "Total Events Logged:",
+                                    "vapt-security",
+                                ); ?></td>
+                            <td><?php echo esc_html(
+                                    $stats["total_events"],
+                                ); ?></td>
+                        </tr>
+                        <tr>
+                            <td><?php esc_html_e(
+                                    "Events in Last 24 Hours:",
+                                    "vapt-security",
+                                ); ?></td>
+                            <td><?php echo esc_html(
+                                    $stats["last_24_hours"],
+                                ); ?></td>
+                        </tr>
+                    </table>
+
+                    <?php if (!empty($stats["event_types"])): ?>
+                        <h4><?php esc_html_e(
+                                "Event Types",
+                                "vapt-security",
+                            ); ?></h4>
+                        <table class="statistics-table">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e(
+                                            "Event Type",
+                                            "vapt-security",
+                                        ); ?></th>
+                                    <th><?php esc_html_e(
+                                            "Count",
+                                            "vapt-security",
+                                        ); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach (
+                                    $stats["event_types"]
+                                    as $type => $count
+                                ): ?>
+                                    <tr>
+                                        <td><?php echo esc_html(
+                                                $type,
+                                            ); ?></td>
+                                        <td><?php echo esc_html(
+                                                $count,
+                                            ); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+
+                    <?php if (!empty($stats["top_ips"])): ?>
+                        <h4><?php esc_html_e(
+                                "Top IPs",
+                                "vapt-security",
+                            ); ?></h4>
+                        <table class="statistics-table">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e(
+                                            "IP Address",
+                                            "vapt-security",
+                                        ); ?></th>
+                                    <th><?php esc_html_e(
+                                            "Event Count",
+                                            "vapt-security",
+                                        ); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach (
+                                    $stats["top_ips"]
+                                    as $ip => $count
+                                ): ?>
+                                    <tr>
+                                        <td><?php echo esc_html(
+                                                $ip,
+                                            ); ?></td>
+                                        <td><?php echo esc_html(
+                                                $count,
+                                            ); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -632,6 +653,47 @@ $is_superadmin = VAPT_Security::is_superadmin();
     </form>
 </div>
 
+<style>
+    .vapt-grid-row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .vapt-grid-col {
+        flex: 1;
+        min-width: 300px;
+        background: #fff;
+        padding: 20px;
+        border: 1px solid #ccd0d4;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    }
+
+    .vapt-grid-col h3 {
+        margin-top: 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    .vapt-grid-col h4 {
+        margin-top: 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    @media (max-width: 782px) {
+        .vapt-grid-row {
+            display: block;
+        }
+
+        .vapt-grid-col {
+            margin-bottom: 20px;
+        }
+    }
+</style>
 <script>
     jQuery(function($) {
         $('#vapt-security-tabs').tabs({
@@ -649,6 +711,53 @@ $is_superadmin = VAPT_Security::is_superadmin();
             }
         });
 
+
+        // AJAXify Main Settings Form
+        $('#vapt-settings-form').on('submit', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var submitBtn = form.find('input[type="submit"]');
+            var originalText = submitBtn.val();
+
+            submitBtn.prop('disabled', true).val('<?php esc_html_e("Saving...", "vapt-security"); ?>');
+
+            var data = form.serialize();
+
+            $.post(ajaxurl, {
+                action: 'vapt_save_settings',
+                data: data,
+                vapt_save_nonce: '<?php echo wp_create_nonce("vapt_save_settings_action"); ?>' // Add dedicated nonce
+            }, function(response) {
+                submitBtn.prop('disabled', false).val(originalText);
+
+                // Show success/error message
+                var msgHtml = '';
+                if (response.success) {
+                    msgHtml = '<div class="notice notice-success is-dismissible" style="display:none; margin: 15px 0;"><p>' + response.data.message + '</p></div>';
+                } else {
+                    msgHtml = '<div class="notice notice-error is-dismissible" style="display:none; margin: 15px 0;"><p>' + (response.data.message || 'Error saving settings') + '</p></div>';
+                }
+
+                // Remove old notices
+                $('.notice').remove();
+
+                // Prepend new notice to form
+                form.prepend(msgHtml);
+                form.find('.notice').slideDown();
+
+                // Auto hide success
+                if (response.success) {
+                    setTimeout(function() {
+                        $('.notice-success').slideUp(function() {
+                            $(this).remove();
+                        });
+                    }, 3000);
+                }
+            }).fail(function() {
+                submitBtn.prop('disabled', false).val(originalText);
+                alert('<?php esc_html_e("Server error or connection failed.", "vapt-security"); ?>');
+            });
+        });
 
         // Live update of simulation count when Rate Limit setting changes
         $('input[name="vapt_security_options[rate_limit_max]"]').on('change keyup', function() {

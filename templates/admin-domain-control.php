@@ -43,7 +43,6 @@ $feature_descriptions = [
     'rate_limiting'    => __('Rate limits form submissions to prevent spam.', 'vapt-security'),
     'input_validation' => __('Validates user input to prevent XSS.', 'vapt-security'),
     'cron_protection'  => __('Protects wp-cron.php and allows disabling default cron.', 'vapt-security'),
-    'security_logging' => __('Logs security events for audit.', 'vapt-security'),
 ];
 
 // Current Version
@@ -344,7 +343,13 @@ $vapt_version = defined('VAPT_VERSION') ? VAPT_VERSION : '2.x';
         });
 
         // Save Features
-        $('#vapt-save-features').click(function() {
+        $('#vapt-domain-features-form').on('submit', function(e) {
+            e.preventDefault();
+            $('#vapt-save-features').click();
+        });
+
+        $('#vapt-save-features').click(function(e) {
+            e.preventDefault();
             var btn = $(this);
             var originalText = btn.text();
             btn.prop('disabled', true).text('<?php esc_html_e('Saving...', 'vapt-security'); ?>');
