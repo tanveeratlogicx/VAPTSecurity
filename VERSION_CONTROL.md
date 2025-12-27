@@ -12,7 +12,7 @@ We follow Semantic Versioning (SemVer) with the format: `MAJOR.MINOR.PATCH`
 
 ## Current Version
 
-Current version: **4.1.2**
+Current version: **4.2.0**
 
 ## Version Bumping
 

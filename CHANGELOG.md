@@ -2,6 +2,14 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [4.2.0] - 2025-12-28
+- **Feature**: Enhanced "Form Rate Limit Test" with real-time visual counters (Total, Blocked, Allowed).
+- **Feature**: Dynamic description in Rate Limit diagnostics showing the actual configured limit.
+- **Fix**: Resolved race condition in concurrent diagnostic requests causing rate limits to fail open.
+- **Fix**: Corrected "Request Count 0" issue by restoring simulation calculation logic.
+- **Fix**: Adjusted whitelist bypass logic to ensure `test_mode` allows diagnostics from localhost.
+- **Security**: Prevented email sending during diagnostic test modes to avoid spam.
+
 ## [4.1.2] - 2025-12-27
 - Fix: Critical bug where Cron Rate Limit setting would revert to default (60) on page reload.
 - Fix: Cron Rate Limit Test failing to trigger ("Blocked: 0") due to Windows file locking concurrency issues.

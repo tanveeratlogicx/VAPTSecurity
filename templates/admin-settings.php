@@ -362,18 +362,22 @@ $opts = $this->get_config();
                                                                                                                                                         ); ?></h4>
                                 <p><?php
                                     $opts = $this->get_config();
-                                    // Fix key mismatch: use rate_limit_max primarily
-                                    $rl_val = isset($opts["rate_limit_max"]) ? (int)$opts["rate_limit_max"] : (isset($opts["vapt_rate_limit_requests"]) ? (int)$opts["vapt_rate_limit_requests"] : 15);
-                                    $rate_limit = ($rl_val < 1) ? 15 : $rl_val;
+                                    // Fix key mismatch: use rate_limit_max primarily, default to 10 to match render callback
+                                    $rl_val = isset($opts["rate_limit_max"]) ? (int)$opts["rate_limit_max"] : 10;
+                                    $rate_limit = ($rl_val < 1) ? 10 : $rl_val;
 
                                     $sim_count = ceil($rate_limit * 1.5);
+
                                     printf(
-                                        esc_html__(
-                                            "Click the button below to simulate %d rapid requests. If Rate Limiting is working, it should block requests after the limit (%d) is reached.",
-                                            "vapt-security",
+                                        wp_kses(
+                                            __(
+                                                "Simulate rapid form submissions to verify throttling. Current Limit: <strong>%d / minute</strong>. Recommended simulation: %d requests.",
+                                                "vapt-security",
+                                            ),
+                                            ['strong' => []]
                                         ),
-                                        $sim_count,
-                                        $rate_limit
+                                        $rate_limit,
+                                        $sim_count
                                     ); ?></p>
                                 <p>
                                     <label for="vapt_sim_count" style="margin-right: 5px; font-weight: 600;"><?php esc_html_e("Simulation Request Count", "vapt-security"); ?></label>
@@ -388,6 +392,20 @@ $opts = $this->get_config();
                                     </button>
                                     <span id="vapt-diagnostic-spinner" class="spinner" style="float: none; margin: 0 10px;"></span>
                                 </p>
+
+                                <div id="vapt-form-test-progress" style="display:none; margin-top:15px; background:#f6f7f7; padding:10px; border-left: 4px solid #2271b1;">
+                                    <strong><?php esc_html_e("Real-time Status:", "vapt-security"); ?></strong>
+                                    <span style="font-size: 1.1em; font-weight: bold; margin-left: 10px;">
+                                        <?php esc_html_e("Total:", "vapt-security"); ?> <span id="vapt-form-count-total">0</span>
+                                    </span>
+                                    <span style="color: #d63638; margin-left: 15px; font-weight: bold;">
+                                        <?php esc_html_e("Blocked:", "vapt-security"); ?> <span id="vapt-form-count-blocked">0</span>
+                                    </span>
+                                    <span style="color: #00a32a; margin-left: 15px; font-weight: bold;">
+                                        <?php esc_html_e("Allowed:", "vapt-security"); ?> <span id="vapt-form-count-allowed">0</span>
+                                    </span>
+                                </div>
+
                                 <div id="vapt-diagnostic-result"></div>
                             </div>
                             <div class="settings-feature-box" style="margin-top: 20px;">

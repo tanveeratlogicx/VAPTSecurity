@@ -3,7 +3,7 @@ Contributors: tanveeratlogicx
 Tags: security, vapt, dos protection, input validation, rate limiting
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 4.1.2
+Stable tag: 4.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -117,6 +117,12 @@ Yes, you can create a `vapt-config.php` file in your WordPress root directory to
 
 == Changelog ==
  
+= 4.2.0 =
+* Feature: Enhanced "Form Rate Limit Test" with real-time visual counters.
+* Fix: Resolved race condition in concurrent diagnostic requests.
+* Fix: Corrected "Request Count 0" issue and whitelist bypass logic.
+* Security: Prevented email sending during diagnostic tests.
+
 = 4.1.2 =
 * Fix: Settings persistence issue for rate limit values.
 * Fix: Cron rate limiter fail-open bug under high concurrency.

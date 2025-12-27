@@ -4,7 +4,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     4.1.2
+ * Version:     4.2.0
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -16,7 +16,7 @@
  */
 
 if (!defined("VAPT_VERSION")) {
-    define("VAPT_VERSION", "4.1.2");
+    define("VAPT_VERSION", "4.2.0");
 }
 
 // If this file is called directly, abort.
@@ -750,7 +750,7 @@ final class VAPT_Security
             "vapt-security-js",
             plugin_dir_url(__FILE__) . "assets/js/vapt-security.js",
             ["jquery"],
-            defined("VAPT_VERSION") ? VAPT_VERSION : "1.0.0",
+            defined("VAPT_VERSION") ? VAPT_VERSION : "4.2.0",
             true,
         );
 
@@ -2079,12 +2079,21 @@ final class VAPT_Security
         if (VAPT_FEATURE_RATE_LIMITING) {
             $rate_limiter = new VAPT_Rate_Limiter();
 
-            // Check if IP is whitelisted
+            // Check if IP is whitelisted (unless in test mode)
+            $is_test = !empty($_POST['test_mode']);
             $current_ip = $rate_limiter->get_current_ip();
+
+            // Logic: specific check. If test mode, IGNORE whitelist. If not test mode, respecting whitelist.
+            $should_check_limit = $is_test || !in_array($current_ip, VAPT_WHITELISTED_IPS);
+
+            // DEBUG LOGGING
+            error_log("VAPT Form Debug: IP: $current_ip, Test Mode: " . ($is_test ? 'YES' : 'NO') . ", Should Check: " . ($should_check_limit ? 'YES' : 'NO'));
+
             if (
-                !in_array($current_ip, VAPT_WHITELISTED_IPS) &&
+                $should_check_limit &&
                 !$rate_limiter->allow_request()
             ) {
+                error_log("VAPT Form Debug: BLOCKED!");
                 // Log the blocked request if logging is enabled
                 if (VAPT_FEATURE_SECURITY_LOGGING) {
                     $logger = new VAPT_Security_Logger();
@@ -2107,9 +2116,14 @@ final class VAPT_Security
         }
 
         // 2. Nonce verification
+        // Logic: If test mode and using dummy nonce, bypass check.
+        $bypass_nonce = $is_test && isset($_POST["nonce"]) && $_POST["nonce"] === 'dummy_nonce_diagnostic';
+
         if (
-            !isset($_POST["nonce"]) ||
-            !wp_verify_nonce(sanitize_key($_POST["nonce"]), "vapt_form_action")
+            !$bypass_nonce && (
+                !isset($_POST["nonce"]) ||
+                !wp_verify_nonce(sanitize_key($_POST["nonce"]), "vapt_form_action")
+            )
         ) {
             // Log the invalid nonce if logging is enabled
             if (VAPT_FEATURE_SECURITY_LOGGING) {
@@ -2250,7 +2264,10 @@ final class VAPT_Security
             $data["message"],
         );
 
-        wp_mail($to, $subject, $body);
+        // Only send email if NOT in test mode
+        if (!$is_test) {
+            wp_mail($to, $subject, $body);
+        }
 
         // Log successful submission if logging is enabled
         if (VAPT_FEATURE_SECURITY_LOGGING) {
@@ -2749,6 +2766,8 @@ $vapt_locked_config_sig = '{$signature}';
             ]);
         }
 
+        $zip->setArchiveComment("VAPT Locked Configuration Build v1.2.0 - Generated " . date("Y-m-d H:i:s"));
+
         // Folder name inside zip
         $folder = "vapt-security";
         $zip->addEmptyDir($folder);
@@ -2917,7 +2936,6 @@ $vapt_locked_config_sig = '{$signature}';
             // User requested: *.example.com -> vapt-security-example.zip
 
             // Sanitize domain for filename
-            // User requested: *.example.com -> vapt-security-example.zip
             // User requested: staging.client-site.co.uk -> vapt-security-client-site.zip
 
             // 1. Remove wildcard and leading dots

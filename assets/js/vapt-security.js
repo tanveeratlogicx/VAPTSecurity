@@ -112,15 +112,26 @@ jQuery(function ($) {
         var btn = $(this);
         var spinner = $('#vapt-diagnostic-spinner');
         var resultDiv = $('#vapt-diagnostic-result');
+        var progressDiv = $('#vapt-form-test-progress'); // New progress div
 
         btn.prop('disabled', true);
         spinner.addClass('is-active');
         resultDiv.html('');
+        progressDiv.show();
+
+        // Counter Variables
+        var totalCount = 0;
+        var blockedCount = 0; // Visual counter
+        var allowedCount = 0;
+
+        // Reset UI
+        $('#vapt-form-count-total').text('0');
+        $('#vapt-form-count-blocked').text('0');
+        $('#vapt-form-count-allowed').text('0');
 
         var blocked = false;
-        var blockedCount = 0;
+        var finalBlockedCount = 0; // Logic variable
 
-        var rateLimitSetting = VAPT_SECURITY.config.rate_limit;
         var totalRequests = parseInt($('#vapt_sim_count').val()) || VAPT_SECURITY.config.test_count;
 
         if (totalRequests < 1) {
@@ -130,8 +141,22 @@ jQuery(function ($) {
             return;
         }
 
-        function sendRequest(i) {
-            return $.ajax({
+        // Recursive function for sequential execution to ensure DB updates (avoid race condition)
+        function processNext(idx) {
+            if (idx >= totalRequests) {
+                // Done
+                btn.prop('disabled', false);
+                spinner.removeClass('is-active');
+
+                if (blocked) {
+                    resultDiv.html('<div class="notice notice-success inline"><p><strong>' + VAPT_SECURITY.strings.success + '</strong> ' + VAPT_SECURITY.strings.rate_working + ' (' + finalBlockedCount + ' blocked)</p></div>');
+                } else {
+                    resultDiv.html('<div class="notice notice-error inline"><p><strong>' + VAPT_SECURITY.strings.warning + '</strong> ' + VAPT_SECURITY.strings.rate_failed + '</p></div>');
+                }
+                return;
+            }
+
+            $.ajax({
                 url: VAPT_SECURITY.ajax_url,
                 method: 'POST',
                 data: {
@@ -139,29 +164,41 @@ jQuery(function ($) {
                     nonce: 'dummy_nonce_diagnostic',
                     test_mode: true
                 }
-            }).always(function (data, textStatus, jqXHR) {
-                if (jqXHR.status === 429 || (data && data.success === false && data.data && data.data.message && data.data.message.indexOf('Too many') !== -1)) {
+            }).done(function (data) {
+                // Success (200 OK)
+                totalCount++;
+                $('#vapt-form-count-total').text(totalCount);
+
+                if (data && data.success === false && data.data && data.data.message && data.data.message.indexOf('Too many') !== -1) {
                     blocked = true;
+                    finalBlockedCount++;
                     blockedCount++;
+                    $('#vapt-form-count-blocked').text(blockedCount);
+                } else {
+                    allowedCount++;
+                    $('#vapt-form-count-allowed').text(allowedCount);
                 }
+                processNext(idx + 1);
+            }).fail(function (jqXHR) {
+                // Error (429 or others)
+                totalCount++;
+                $('#vapt-form-count-total').text(totalCount);
+
+                if (jqXHR.status === 429) {
+                    blocked = true;
+                    finalBlockedCount++;
+                    blockedCount++;
+                    $('#vapt-form-count-blocked').text(blockedCount);
+                } else {
+                    allowedCount++;
+                    $('#vapt-form-count-allowed').text(allowedCount);
+                }
+                processNext(idx + 1);
             });
         }
 
-        var promises = [];
-        for (var i = 0; i < totalRequests; i++) {
-            promises.push(sendRequest(i));
-        }
-
-        $.when.apply($, promises).always(function () {
-            btn.prop('disabled', false);
-            spinner.removeClass('is-active');
-
-            if (blocked) {
-                resultDiv.html('<div class="notice notice-success inline"><p><strong>' + VAPT_SECURITY.strings.success + '</strong> ' + VAPT_SECURITY.strings.rate_working + ' (' + blockedCount + ' blocked)</p></div>');
-            } else {
-                resultDiv.html('<div class="notice notice-error inline"><p><strong>' + VAPT_SECURITY.strings.warning + '</strong> ' + VAPT_SECURITY.strings.rate_failed + '</p></div>');
-            }
-        });
+        // Start recursion
+        processNext(0);
     });
 
     /* ---------------------------------------------------------------------- */
