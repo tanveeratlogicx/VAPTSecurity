@@ -4,7 +4,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     4.1.0
+ * Version:     4.1.1
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -16,7 +16,7 @@
  */
 
 if (!defined("VAPT_VERSION")) {
-    define("VAPT_VERSION", "4.1.0");
+    define("VAPT_VERSION", "4.1.1");
 }
 
 // If this file is called directly, abort.
@@ -595,10 +595,12 @@ final class VAPT_Security
         if (strpos($_SERVER["REQUEST_URI"] ?? "", "wp-cron.php") !== false) {
             $rate_limiter = new VAPT_Rate_Limiter();
 
-            // Check if IP is whitelisted
+            // Check if IP is whitelisted (Bypass if it's a diagnostic test)
             $current_ip = $rate_limiter->get_current_ip();
-            if (in_array($current_ip, VAPT_WHITELISTED_IPS)) {
-                return; // Allow whitelisted IPs
+            $is_test = isset($_GET["vapt_test"]) && $_GET["vapt_test"] === "1";
+
+            if (!$is_test && in_array($current_ip, VAPT_WHITELISTED_IPS)) {
+                return; // Allow whitelisted IPs unless testing
             }
 
             // Apply rate limiting for cron requests
@@ -2250,6 +2252,7 @@ final class VAPT_Security
                     "vapt-security",
                 ),
                 "expires_formatted" => $formatted,
+                "type" => $type,
             ]);
             return;
         }
@@ -2262,6 +2265,7 @@ final class VAPT_Security
             wp_send_json_success([
                 "message" => __("License updated.", "vapt-security"),
                 "expires_formatted" => $formatted,
+                "type" => $license["type"],
             ]);
         } else {
             wp_send_json_error([
@@ -2500,7 +2504,7 @@ $vapt_locked_config_sig = '{$signature}';
             "settings" => $settings,
             "generated_at" => time(),
             "generated_by" => "superadmin",
-            "version"      => "1.0.0"
+            "version"      => "1.1.0"
         ];
         $json_payload = json_encode($payload);
         $salt = "VAPT_LOCKED_CONFIG_INTEGRITY_SALT_v2";

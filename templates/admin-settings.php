@@ -707,51 +707,6 @@ $is_superadmin = VAPT_Security::is_superadmin();
 </div>
 
 <style>
-    .vapt-grid-row {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-    }
-
-    .vapt-grid-col {
-        flex: 1;
-        min-width: 300px;
-        background: #fff;
-        padding: 20px;
-        border: 1px solid #ccd0d4;
-        box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
-    }
-
-    .vapt-grid-col h3 {
-        margin-top: 0;
-        border-bottom: 2px solid #e2e4e7;
-        padding: 12px 15px;
-        margin-bottom: 20px;
-        color: #1d2327;
-        font-size: 1.1em;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: #f6f7f7;
-        border-radius: 4px;
-        box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.05);
-    }
-
-    .vapt-grid-col h3 .dashicons {
-        color: #2271b1;
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-    }
-
-    .vapt-grid-col h4 {
-        margin-top: 15px;
-        margin-bottom: 10px;
-        font-weight: 600;
-        color: #2c3338;
-    }
-
     .vapt-stat-heading {
         margin-top: 0 !important;
         padding-bottom: 10px;
@@ -763,41 +718,6 @@ $is_superadmin = VAPT_Security::is_superadmin();
 
     .vapt-stat-heading .dashicons {
         color: #646970;
-    }
-
-    .settings-feature-box {
-        background: #fdfdfd;
-        border: 1px solid #ccd0d4;
-        padding: 15px;
-        border-radius: 6px;
-        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
-    }
-
-    .vapt-security-tab-content>h3 {
-        margin: 0 0 20px 0;
-        padding: 12px 15px;
-        border: 1px solid #ccd0d4;
-        background: #f6f7f7;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 1.3em;
-        color: #1d2327;
-    }
-
-    .vapt-security-tab-content>h3 .dashicons {
-        color: #2271b1;
-    }
-
-    @media (max-width: 782px) {
-        .vapt-grid-row {
-            display: block;
-        }
-
-        .vapt-grid-col {
-            margin-bottom: 20px;
-        }
     }
 </style>
 <script>
@@ -969,7 +889,7 @@ $is_superadmin = VAPT_Security::is_superadmin();
     var btn = $(this);
     var spinner = $('#vapt-cron-diagnostic-spinner');
     var resultDiv = $('#vapt-cron-diagnostic-result');
-    var cronUrl = '<?php echo esc_url(site_url("wp-cron.php")); ?>?doing_wp_cron=' + Date.now();
+    var cronUrl = '<?php echo esc_url(site_url("wp-cron.php")); ?>?doing_wp_cron=' + Date.now() + '&vapt_test=1';
 
     btn.prop('disabled', true);
     spinner.addClass('is-active');
@@ -979,7 +899,14 @@ $is_superadmin = VAPT_Security::is_superadmin();
     var blocked = false;
     var successCount = 0;
     var blockedCount = 0;
-    var totalRequests = parseInt($('#vapt_cron_sim_count').val()) || 60;
+
+    <?php
+    $opts = $this->get_config();
+    $cron_limit = isset($opts["cron_rate_limit"]) ? (int)$opts["cron_rate_limit"] : 60;
+    $cron_test_count = ceil($cron_limit * 1.5);
+    ?>
+    var cronLimitSetting = <?php echo (int)$cron_limit; ?>;
+    var totalRequests = parseInt($('#vapt_cron_sim_count').val()) || <?php echo (int)$cron_test_count; ?>;
 
     function sendCronRequest(i) {
         return $.ajax({

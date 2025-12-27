@@ -2,7 +2,7 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
-## [4.1.0] - 2025-12-27
+## [4.1.1] - 2025-12-27
 - **Feature**: Added "Cron Rate Limit Test" diagnostic tool to demonstrate throttling.
 - **Improvement**: Redesigned WP-Cron Protection tab layout for better ergonomics.
 - **Improvement**: Enhanced H3 section headers with distinct backgrounds and icons across all tabs.
