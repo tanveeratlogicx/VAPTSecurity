@@ -1,4 +1,4 @@
-# VAPT Security - User Guide (v4.1.1)
+# VAPT Security - User Guide (v4.1.2)
 
 This guide provides an overview of the security features enabled by the VAPT Security plugin and instructions on how to verify they are working.
 

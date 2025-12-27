@@ -3,7 +3,7 @@ Contributors: tanveeratlogicx
 Tags: security, vapt, dos protection, input validation, rate limiting
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 4.1.1
+Stable tag: 4.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -117,6 +117,11 @@ Yes, you can create a `vapt-config.php` file in your WordPress root directory to
 
 == Changelog ==
  
+= 4.1.2 =
+* Fix: Settings persistence issue for rate limit values.
+* Fix: Cron rate limiter fail-open bug under high concurrency.
+* Fix: Diagnostic tool reporting logic.
+
 = 4.1.1 =
 * Feature: Added "Cron Rate Limit Test" diagnostic tool to demonstrate throttling.
 * Improvement: Redesigned WP-Cron Protection tab layout for better ergonomics.

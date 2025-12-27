@@ -2,6 +2,13 @@
 
 All notable changes to the VAPT Security plugin will be documented in this file.
 
+## [4.1.2] - 2025-12-27
+- Fix: Critical bug where Cron Rate Limit setting would revert to default (60) on page reload.
+- Fix: Cron Rate Limit Test failing to trigger ("Blocked: 0") due to Windows file locking concurrency issues.
+- Fix: JavaScript diagnostic tool failing to correctly identify 429 status codes.
+- Fix: Re-applied raw HTTP headers for robust 429 response handling.
+- Improvement: Added retries and error logging to file-based rate limiter logic.
+
 ## [4.1.1] - 2025-12-27
 - **Feature**: Added "Cron Rate Limit Test" diagnostic tool to demonstrate throttling.
 - **Improvement**: Redesigned WP-Cron Protection tab layout for better ergonomics.

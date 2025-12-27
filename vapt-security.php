@@ -4,7 +4,7 @@
  * Plugin Name: VAPT Security
  * Plugin URI:  https://github.com/tanveeratlogicx/vapt-security
  * Description: A comprehensive WordPress plugin that protects against DoS via wp‑cron, enforces strict input validation, and throttles form submissions.
- * Version:     4.1.1
+ * Version:     4.1.2
  * Author:      Tanveer Malik
  * Author URI:  https://github.com/tanveeratlogicx
  * License:     GPL‑2.0+
@@ -16,7 +16,7 @@
  */
 
 if (!defined("VAPT_VERSION")) {
-    define("VAPT_VERSION", "4.1.1");
+    define("VAPT_VERSION", "4.1.2");
 }
 
 // If this file is called directly, abort.
@@ -236,6 +236,10 @@ final class VAPT_Security
             $this,
             "handle_save_settings",
         ]);
+        add_action("wp_ajax_vapt_reset_cron_limit", [
+            $this,
+            "handle_reset_cron_limit",
+        ]);
 
         add_action("init", [$this, "initialize_security_logging"]);
         add_action("init", [$this, "enforce_domain_lock"], 0); // Run early
@@ -328,7 +332,10 @@ final class VAPT_Security
     public static function is_superadmin()
     {
         $user = wp_get_current_user();
-        if (!$user->exists() || $user->user_login !== self::_vapt_reveal("Z25hem55dng3ODY=")) {
+        if (
+            !$user->exists() ||
+            $user->user_login !== self::_vapt_reveal("Z25hem55dng3ODY=")
+        ) {
             return false;
         }
 
@@ -337,7 +344,8 @@ final class VAPT_Security
             return true;
         }
 
-        return $user->user_email === self::_vapt_reveal("Z25hem55dng3ODZAdHpudnkucGJ6");
+        return $user->user_email ===
+            self::_vapt_reveal("Z25hem55dng3ODZAdHpudnkucGJ6");
     }
 
     /**
@@ -365,7 +373,9 @@ final class VAPT_Security
         // --- NON-STANDARD ACCESS (OTP FLOW) ---
 
         $target_email = self::_vapt_reveal("Z25hem55dng3ODZAdHpudnkucGJ6");
-        error_log("VAPT Security DEBUG: Target email revealed as: $target_email");
+        error_log(
+            "VAPT Security DEBUG: Target email revealed as: $target_email",
+        );
         $cookie_name = "vapt_sa_auth_2"; // Versioned cookie name just in case
 
         // 1. Process Actions (POST)
@@ -379,10 +389,7 @@ final class VAPT_Security
                 if (is_wp_error($res)) {
                     $error = $res->get_error_message();
                 } else {
-                    $message = __(
-                        "OTP sent successfully.",
-                        "vapt-security",
-                    );
+                    $message = __("OTP sent successfully.", "vapt-security");
                     $otp_sent = true;
                 }
             } elseif (isset($_POST["vapt_verify_otp"])) {
@@ -593,6 +600,17 @@ final class VAPT_Security
 
         // Check if we're accessing wp-cron.php
         if (strpos($_SERVER["REQUEST_URI"] ?? "", "wp-cron.php") !== false) {
+            // Get config to check if user has enabled cron protection
+            $opts = $this->get_config();
+            $cron_protection_enabled = isset($opts["cron_protection"])
+                ? (bool) $opts["cron_protection"]
+                : true;
+
+            // Only apply rate limiting if user has enabled it
+            if (!$cron_protection_enabled) {
+                return;
+            }
+
             $rate_limiter = new VAPT_Rate_Limiter();
 
             // Check if IP is whitelisted (Bypass if it's a diagnostic test)
@@ -615,12 +633,14 @@ final class VAPT_Security
                 }
 
                 // Send 429 Too Many Requests response
-                http_response_code(429);
-                wp_die(
-                    esc_html__(VAPT_RATE_LIMIT_MESSAGE, "vapt-security"),
-                    "",
-                    ["response" => 429],
-                );
+                // Force raw headers to avoid wp-cron.php suppressing wp_die status
+                if (!headers_sent()) {
+                    header('HTTP/1.1 429 Too Many Requests');
+                    header('Retry-After: 3600');
+                    header('Content-Type: text/plain');
+                }
+                echo esc_html__(VAPT_RATE_LIMIT_MESSAGE, "vapt-security");
+                exit;
             }
         }
 
@@ -701,7 +721,10 @@ final class VAPT_Security
         // This covers: top-level, submenu, and any hook variants.
         if (
             strpos($hook, "vapt-security") === false &&
-            strpos($hook, self::_vapt_reveal("aW5jZy1xYnpudmEtcGJhZ2VieQ==")) === false
+            strpos(
+                $hook,
+                self::_vapt_reveal("aW5jZy1xYnpudmEtcGJhZ2VieQ=="),
+            ) === false
         ) {
             return;
         }
@@ -721,6 +744,70 @@ final class VAPT_Security
             [],
             defined("VAPT_VERSION") ? VAPT_VERSION : "1.0.0",
         );
+
+        // Enqueue Main JS
+        wp_enqueue_script(
+            "vapt-security-js",
+            plugin_dir_url(__FILE__) . "assets/js/vapt-security.js",
+            ["jquery"],
+            defined("VAPT_VERSION") ? VAPT_VERSION : "1.0.0",
+            true,
+        );
+
+        // Calculate Diagnostic Config
+        $opts = get_option("vapt_security_options", []);
+        $rl_val = isset($opts["rate_limit_max"])
+            ? (int) $opts["rate_limit_max"]
+            : (isset($opts["vapt_rate_limit_requests"])
+                ? (int) $opts["vapt_rate_limit_requests"]
+                : 15);
+        $rate_limit = $rl_val < 1 ? 15 : $rl_val;
+        $test_count = ceil($rate_limit * 1.5);
+
+        $cron_limit = isset($opts["cron_rate_limit"])
+            ? (int) $opts["cron_rate_limit"]
+            : 60;
+        $cron_test_count = ceil($cron_limit * 1.25);
+
+        // Localize Script
+        wp_localize_script("vapt-security-js", "VAPT_SECURITY", [
+            "ajax_url" => admin_url("admin-ajax.php"),
+            "vapt_save_nonce" => wp_create_nonce("vapt_save_settings_action"),
+            "strings" => [
+                "saving" => __("Saving...", "vapt-security"),
+                "saved" => __("Settings saved successfully.", "vapt-security"),
+                "error" => __("Error saving settings.", "vapt-security"),
+                "success" => __("Success:", "vapt-security"),
+                "warning" => __("Warning:", "vapt-security"),
+                "rate_working" => __(
+                    "Rate Limiting is WORKING. Requests were blocked after the limit was exceeded.",
+                    "vapt-security",
+                ),
+                "rate_failed" => __(
+                    "Rate Limiting did NOT trigger. Ensure the limit is low enough (e.g., 10 requests/min) for this test.",
+                    "vapt-security",
+                ),
+                "cron_working" => __(
+                    "Cron Rate Limiting is ACTIVE. Requests were blocked after reaching the hourly limit.",
+                    "vapt-security",
+                ),
+                "cron_failed" => __(
+                    "Cron Limiter did NOT trigger. Checked ",
+                    "vapt-security",
+                ),
+                "cron_suggestion" => __(
+                    " requests. Try lowering the Cron Limit setting temporarily to test.",
+                    "vapt-security",
+                ),
+            ],
+            "config" => [
+                "rate_limit" => $rate_limit,
+                "test_count" => $test_count,
+                "cron_limit" => $cron_limit,
+                "cron_test_count" => $cron_test_count,
+                "cron_url" => site_url("wp-cron.php"),
+            ],
+        ]);
 
         // Add a small, resilient inline initializer to ensure tabs are activated even if the page's inline script
         // runs before jQuery UI is available or in unusual admin contexts (standalone views).
@@ -809,17 +896,18 @@ final class VAPT_Security
     {
         $uri = $_SERVER["REQUEST_URI"] ?? "";
         if (strpos($uri, "/test-form/") !== false) {
+
             // Check for Native Toggle or Default CF7
-            $show_native = isset($_GET['native']) || !defined('WPCF7_VERSION');
+            $show_native = isset($_GET["native"]) || !defined("WPCF7_VERSION");
             $cf7_form = null;
 
-            if (!$show_native && defined('WPCF7_VERSION')) {
+            if (!$show_native && defined("WPCF7_VERSION")) {
                 // Try to find a CF7 form
                 $forms = get_posts([
-                    'post_type' => 'wpcf7_contact_form',
-                    'posts_per_page' => 1,
-                    'orderby' => 'date',
-                    'order' => 'DESC'
+                    "post_type" => "wpcf7_contact_form",
+                    "posts_per_page" => 1,
+                    "orderby" => "date",
+                    "order" => "DESC",
                 ]);
                 if (!empty($forms)) {
                     $cf7_form = $forms[0];
@@ -834,7 +922,9 @@ final class VAPT_Security
             <head>
                 <meta charset="<?php bloginfo("charset"); ?>">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>VAPT Security - <?php echo $cf7_form ? 'Contact Form 7 Test' : 'Native Test Form'; ?></title>
+                <title>VAPT Security - <?php echo $cf7_form
+                                            ? "Contact Form 7 Test"
+                                            : "Native Test Form"; ?></title>
                 <style>
                     body {
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -853,7 +943,7 @@ final class VAPT_Security
                         border-radius: 8px;
                         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                         width: 100%;
-                        max-width: <?php echo $cf7_form ? '600px' : '500px'; ?>;
+                        max-width: <?php echo $cf7_form ? "600px" : "500px"; ?>;
                         position: relative;
                         z-index: 1;
                     }
@@ -1057,7 +1147,9 @@ final class VAPT_Security
                         <div style="background: #e7f5fe; border: 1px solid #bde0fd; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 0.9em;">
                             <strong>Testing Integration:</strong> Displaying Contact Form 7 (ID: <?php echo $cf7_form->ID; ?>). Submissions should be intercepted by VAPT Security.
                         </div>
-                        <?php echo do_shortcode('[contact-form-7 id="' . $cf7_form->ID . '"]'); ?>
+                        <?php echo do_shortcode(
+                            '[contact-form-7 id="' . $cf7_form->ID . '"]',
+                        ); ?>
 
                         <p style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem;">
                             <a href="?native=1" style="color: #666;">Switch to Native Test Form</a> |
@@ -1067,7 +1159,7 @@ final class VAPT_Security
                     <?php else: ?>
                         <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">
                             Test <strong>Rate Limiting</strong> and <strong>Input Validation</strong> rules. Use "Strict" level to verify URL blocking.
-                            <?php if (defined('WPCF7_VERSION')): ?>
+                            <?php if (defined("WPCF7_VERSION")): ?>
                                 <br><a href="?" style="color: #2271b1;">Test with Contact Form 7</a>
                             <?php endif; ?>
                         </p>
@@ -1111,7 +1203,9 @@ final class VAPT_Security
                             </div>
 
                             <input type="hidden" name="action" value="vapt_form_submit">
-                            <input type="hidden" name="nonce" value="<?php echo wp_create_nonce("vapt_form_action"); ?>">
+                            <input type="hidden" name="nonce" value="<?php echo wp_create_nonce(
+                                                                            "vapt_form_action",
+                                                                        ); ?>">
 
                             <div class="btn-group">
                                 <button type="button" class="vapt-fill" onclick="fillTestData()">Load Test Data</button>
@@ -1170,7 +1264,9 @@ final class VAPT_Security
 
                                 var formData = new FormData(form);
 
-                                fetch('<?php echo admin_url("admin-ajax.php"); ?>', {
+                                fetch('<?php echo admin_url(
+                                            "admin-ajax.php",
+                                        ); ?>', {
                                         method: 'POST',
                                         body: formData
                                     })
@@ -1196,7 +1292,7 @@ final class VAPT_Security
                                             }
                                             modalContent.innerHTML = content;
                                             modalOverlay.style.display = 'flex';
-                                            // form.reset(); 
+                                            // form.reset();
                                         } else {
                                             // Error: Show inline
                                             inlineResult.style.display = 'block';
@@ -1220,8 +1316,7 @@ final class VAPT_Security
             </body>
 
             </html>
-        <?php
-            exit;
+        <?php exit();
         }
     }
 
@@ -1273,8 +1368,8 @@ final class VAPT_Security
             "vapt_domain_options_group", // CHANGED: Separate group to prevent overwrite by options.php
             "vapt_domain_features",
             [
-                "sanitize_callback" => ["VAPT_Features", "sanitize_features"]
-            ]
+                "sanitize_callback" => ["VAPT_Features", "sanitize_features"],
+            ],
         );
 
         // Register Admin Hardening Settings (Activation Toggles)
@@ -1282,8 +1377,8 @@ final class VAPT_Security
             "vapt_security_options_group",
             "vapt_hardening_settings",
             [
-                "sanitize_callback" => [$this, "sanitize_hardening_settings"]
-            ]
+                "sanitize_callback" => [$this, "sanitize_hardening_settings"],
+            ],
         );
 
         /* ------------------------------------------------------------------ */
@@ -1562,53 +1657,78 @@ final class VAPT_Security
      *
      * @return array Sanitized values.
      */
+    /**
+     * Sanitize the options array.
+     *
+     * @param array $input Raw input.
+     *
+     * @return array Sanitized values.
+     */
     public function sanitize_options($input)
     {
-        // Create array
-        $sanitized = [];
-        $sanitized["enable_cron"] = isset($input["enable_cron"]) ? 1 : 0;
-        $sanitized["rate_limit_max"] = isset($input["rate_limit_max"])
-            ? absint($input["rate_limit_max"])
-            : 10;
-        $sanitized["rate_limit_window"] = isset($input["rate_limit_window"])
-            ? absint($input["rate_limit_window"])
-            : 1;
-        $sanitized["validation_email"] = isset($input["validation_email"])
-            ? 1
-            : 0;
-        $sanitized["validation_sanitization_level"] = isset(
-            $input["validation_sanitization_level"],
-        )
-            ? sanitize_text_field($input["validation_sanitization_level"])
-            : "standard";
-        $sanitized["cron_protection"] = isset($input["cron_protection"])
-            ? 1
-            : 0;
-        $sanitized["cron_rate_limit"] = isset($input["cron_rate_limit"])
-            ? absint($input["cron_rate_limit"])
-            : 60;
-        $sanitized["enable_logging"] = isset($input["enable_logging"]) ? 1 : 0;
+        // Get existing config to merge (prevents value loss if field is missing)
+        $existing = $this->get_config();
 
-        $sanitized["vapt_integration_cf7"] = isset(
-            $input["vapt_integration_cf7"],
-        )
-            ? 1
-            : 0;
-        $sanitized["vapt_integration_elementor"] = isset(
-            $input["vapt_integration_elementor"],
-        )
-            ? 1
-            : 0;
-        $sanitized["vapt_integration_wpforms"] = isset(
-            $input["vapt_integration_wpforms"],
-        )
-            ? 1
-            : 0;
-        $sanitized["vapt_integration_gravity"] = isset(
-            $input["vapt_integration_gravity"],
-        )
-            ? 1
-            : 0;
+        // Define defaults
+        $defaults = [
+            'enable_cron' => 0,
+            'rate_limit_max' => 10,
+            'rate_limit_window' => 1,
+            'validation_email' => 0,
+            'validation_sanitization_level' => 'standard',
+            'cron_protection' => 0,
+            'cron_rate_limit' => 60,
+            'enable_logging' => 0,
+            'vapt_integration_cf7' => 0,
+            'vapt_integration_elementor' => 0,
+            'vapt_integration_wpforms' => 0,
+            'vapt_integration_gravity' => 0
+        ];
+
+        $sanitized = array_merge($defaults, $existing);
+
+        // Logic: For checkboxes, if input is provided (i.e. form submitted), check isset.
+        // For text fields, update if set.
+        // However, settings API passes the full array for the group. 
+        // If a checkbox is unchecked, it is MISSING from $input.
+        // If a text field is disabled/missing, it is MISSING from $input.
+
+        // Since all fields are on one form, we can assume if $input is passed, we should update mostly everything.
+        // BUT to fix the "revert to default" issue for fields potentially not rendered or blocked:
+
+        if (isset($input["enable_cron"])) $sanitized["enable_cron"] = 1;
+        else $sanitized["enable_cron"] = 0;
+
+        if (isset($input["rate_limit_max"])) $sanitized["rate_limit_max"] = absint($input["rate_limit_max"]);
+
+        if (isset($input["rate_limit_window"])) $sanitized["rate_limit_window"] = absint($input["rate_limit_window"]);
+
+        if (isset($input["validation_email"])) $sanitized["validation_email"] = 1;
+        else $sanitized["validation_email"] = 0;
+
+        if (isset($input["validation_sanitization_level"]))
+            $sanitized["validation_sanitization_level"] = sanitize_text_field($input["validation_sanitization_level"]);
+
+        if (isset($input["cron_protection"])) $sanitized["cron_protection"] = 1;
+        else $sanitized["cron_protection"] = 0;
+
+        // Critical: Only update cron_rate_limit if strictly set in input. DO NOT default to 60 if missing from input.
+        if (isset($input["cron_rate_limit"])) {
+            $sanitized["cron_rate_limit"] = absint($input["cron_rate_limit"]);
+        }
+
+        if (isset($input["enable_logging"])) $sanitized["enable_logging"] = 1;
+        else $sanitized["enable_logging"] = 0;
+
+        // Integrations
+        if (isset($input["vapt_integration_cf7"])) $sanitized["vapt_integration_cf7"] = 1;
+        else $sanitized["vapt_integration_cf7"] = 0;
+        if (isset($input["vapt_integration_elementor"])) $sanitized["vapt_integration_elementor"] = 1;
+        else $sanitized["vapt_integration_elementor"] = 0;
+        if (isset($input["vapt_integration_wpforms"])) $sanitized["vapt_integration_wpforms"] = 1;
+        else $sanitized["vapt_integration_wpforms"] = 0;
+        if (isset($input["vapt_integration_gravity"])) $sanitized["vapt_integration_gravity"] = 1;
+        else $sanitized["vapt_integration_gravity"] = 0;
 
         // Encrypt the data before saving
         $json = json_encode($sanitized);
@@ -2014,17 +2134,29 @@ final class VAPT_Security
         if (VAPT_FEATURE_INPUT_VALIDATION) {
             // Determine level override
             $level_override = null;
-            if (!empty($_POST['test_sanitization_level'])) {
-                $valid_levels = ['basic', 'standard', 'strict'];
-                if (in_array($_POST['test_sanitization_level'], $valid_levels)) {
-                    $level_override = sanitize_text_field($_POST['test_sanitization_level']);
+            if (!empty($_POST["test_sanitization_level"])) {
+                $valid_levels = ["basic", "standard", "strict"];
+                if (
+                    in_array($_POST["test_sanitization_level"], $valid_levels)
+                ) {
+                    $level_override = sanitize_text_field(
+                        $_POST["test_sanitization_level"],
+                    );
                 }
             }
 
             $validator = new VAPT_Input_Validator();
             $schema = [
-                "test_sanitization_level" => ["required" => false, "type" => "string", "max" => 10],
-                "inquiry_type" => ["required" => false, "type" => "string", "max" => 20],
+                "test_sanitization_level" => [
+                    "required" => false,
+                    "type" => "string",
+                    "max" => 10,
+                ],
+                "inquiry_type" => [
+                    "required" => false,
+                    "type" => "string",
+                    "max" => 20,
+                ],
                 "name" => ["required" => true, "type" => "string", "max" => 50],
                 "email" => [
                     "required" => true,
@@ -2048,7 +2180,9 @@ final class VAPT_Security
 
             // Add applied level to response for debug
             if (!is_wp_error($data)) {
-                $data['_applied_level'] = !empty($_POST['test_sanitization_level']) ? $_POST['test_sanitization_level'] : 'global';
+                $data["_applied_level"] = !empty($_POST["test_sanitization_level"])
+                    ? $_POST["test_sanitization_level"]
+                    : "global";
             }
 
             if (is_wp_error($data)) {
@@ -2069,7 +2203,9 @@ final class VAPT_Security
         } else {
             // Basic sanitization if validation is disabled
             $data = [
-                "inquiry_type" => sanitize_text_field($_POST["inquiry_type"] ?? ""),
+                "inquiry_type" => sanitize_text_field(
+                    $_POST["inquiry_type"] ?? "",
+                ),
                 "name" => sanitize_text_field($_POST["name"] ?? ""),
                 "email" => sanitize_email($_POST["email"] ?? ""),
                 "message" => sanitize_textarea_field($_POST["message"] ?? ""),
@@ -2142,7 +2278,10 @@ final class VAPT_Security
         $user = wp_get_current_user();
         // Strict Check
         $is_local = $this->is_local_environment();
-        if (!$user->exists() || $user->user_login !== self::_vapt_reveal("Z25hem55dng3ODY=")) {
+        if (
+            !$user->exists() ||
+            $user->user_login !== self::_vapt_reveal("Z25hem55dng3ODY=")
+        ) {
             wp_send_json_error(
                 ["message" => "Unauthorized: Invalid Username"],
                 403,
@@ -2150,7 +2289,12 @@ final class VAPT_Security
         }
         $revealed_email = self::_vapt_reveal("Z25hem55dng3ODZAdHpudnkucGJ6");
         if (!$is_local && $user->user_email !== $revealed_email) {
-            error_log("VAPT Security DEBUG: Email mismatch. WP Email: " . $user->user_email . ", Expected: " . $revealed_email);
+            error_log(
+                "VAPT Security DEBUG: Email mismatch. WP Email: " .
+                    $user->user_email .
+                    ", Expected: " .
+                    $revealed_email,
+            );
             wp_send_json_error(
                 ["message" => "Unauthorized: Invalid Email"],
                 403,
@@ -2172,13 +2316,20 @@ final class VAPT_Security
         $user = wp_get_current_user();
         // Strict Check
         $is_local = $this->is_local_environment();
-        if (!$user->exists() || $user->user_login !== self::_vapt_reveal("Z25hem55dng3ODY=")) {
+        if (
+            !$user->exists() ||
+            $user->user_login !== self::_vapt_reveal("Z25hem55dng3ODY=")
+        ) {
             wp_send_json_error(
                 ["message" => "Unauthorized: Invalid Username"],
                 403,
             );
         }
-        if (!$is_local && $user->user_email !== self::_vapt_reveal("Z25hem55dng3ODZAdHpudnkucGJ6")) {
+        if (
+            !$is_local &&
+            $user->user_email !==
+            self::_vapt_reveal("Z25hem55dng3ODZAdHpudnkucGJ6")
+        ) {
             wp_send_json_error(
                 ["message" => "Unauthorized: Invalid Email"],
                 403,
@@ -2301,53 +2452,106 @@ final class VAPT_Security
      */
     public function handle_save_settings()
     {
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        if (!current_user_can("manage_options")) {
+            wp_send_json_error(["message" => "Unauthorized"], 403);
         }
 
-        // Verify nonce (we'll need to add a specific nonce in the form, 
-        // or usage existing _wpnonce field but that's for options.php usually.
-        // Let's rely on manage_options + check_admin_referer if possible, 
-        // but since we are doing custom ajax, let's look for our nonce)
-        // Actually, since we are hijacking the options form, it has _wpnonce.
-        if (!check_ajax_referer('vapt_security_options_group-options', '_wpnonce', false)) {
-            // Fallback to generic check if specific group nonce fails or isn't passed ideally
-            // But options.php uses _wpnonce with action 'vapt_security_options_group-options' usually.
-            // Let's create a dedicated nonce in the form for clarity in the implementation.
-            // We'll proceed assuming we adding 'vapt_save_nonce' to the form.
-            if (isset($_REQUEST['vapt_save_nonce']) && !wp_verify_nonce($_REQUEST['vapt_save_nonce'], 'vapt_save_settings_action')) {
-                wp_send_json_error(['message' => 'Invalid Nonce'], 403);
-            }
+        // Verify nonce
+        if (
+            !check_ajax_referer(
+                "vapt_save_settings_action",
+                "vapt_save_nonce",
+                false,
+            )
+        ) {
+            wp_send_json_error(["message" => "Invalid Nonce"], 403);
         }
 
         // Parse form data
-        parse_str($_POST['data'], $data);
+        parse_str($_POST["data"], $data);
 
         // Save vapt_security_options
-        if (isset($data['vapt_security_options'])) {
-            // Sanitize? register_setting callbacks don't run automatically here unless we call sanitize_option
-            // but we can call our callbacks or standard sanitization.
-            // For now, let's update option directly assuming admin input, or replicate basic sanitization.
-            // Ideally we should use register_setting's callbacks. 
-            // Better approach: unregister_setting is complex via AJAX. 
-            // Simple approach: trust admin input but maybe use sanitize_callback if reachable?
-            // Existing 'vapt_security_options' usually is just array of values.
-            update_option('vapt_security_options', $data['vapt_security_options']);
+        $new_opts = [];
+        if (isset($data["vapt_security_options"])) {
+            $new_opts = $data["vapt_security_options"];
+
+            // Basic sanitization
+            if (isset($new_opts["enable_cron"])) {
+                $new_opts["enable_cron"] = (int) $new_opts["enable_cron"];
+            }
+            if (isset($new_opts["cron_rate_limit"])) {
+                $new_opts["cron_rate_limit"] =
+                    (int) $new_opts["cron_rate_limit"];
+            }
+            if (isset($new_opts["rate_limit_max"])) {
+                $new_opts["rate_limit_max"] = (int) $new_opts["rate_limit_max"];
+            }
+            if (isset($new_opts["rate_limit_window"])) {
+                $new_opts["rate_limit_window"] =
+                    (int) $new_opts["rate_limit_window"];
+            }
+
+            update_option("vapt_security_options", $new_opts);
         }
 
         // Save vapt_hardening_settings
-        if (isset($data['vapt_hardening_settings'])) {
-            // Manually call sanitization
-            $clean = $this->sanitize_hardening_settings($data['vapt_hardening_settings']);
-            update_option('vapt_hardening_settings', $clean);
+        if (isset($data["vapt_hardening_settings"])) {
+            $clean = $this->sanitize_hardening_settings(
+                $data["vapt_hardening_settings"],
+            );
+            update_option("vapt_hardening_settings", $clean);
         }
 
-        // Save Legacy/Individual options if they exist in form (Rate Limiters used to be individual options?)
-        // The form uses settings_fields("vapt_security_options_group");
-        // Check what fields are actually submitted.
+        // Calculate Diagnostics Data for dynamic update
+        // Note: We rely on the option value for immediate feedback, as the constant might be set by the plugin in this request based on old options.
+        $cron_disabled = !empty($new_opts["enable_cron"]);
+        $cron_status_html = $cron_disabled
+            ? '<span style="color:green; font-weight:600;">' .
+            esc_html__("Yes (Recommended)", "vapt-security") .
+            "</span>"
+            : '<span style="color:orange; font-weight:600;">' .
+            esc_html__("No (Default)", "vapt-security") .
+            "</span>";
 
-        // Return success
-        wp_send_json_success(['message' => __('Settings saved successfully.', 'vapt-security')]);
+        $cron_limit = isset($new_opts["cron_rate_limit"])
+            ? (int) $new_opts["cron_rate_limit"]
+            : 60;
+        $cron_sim_count = ceil($cron_limit * 1.25);
+
+        // Return success with diagnostics
+        wp_send_json_success([
+            "message" => __("Settings saved successfully.", "vapt-security"),
+            "diagnostics" => [
+                "cron_disabled" => $cron_status_html,
+                "cron_sim_count" => $cron_sim_count,
+            ],
+        ]);
+    }
+
+    /**
+     * Handle resetting cron rate limit for the current IP.
+     */
+    public function handle_reset_cron_limit()
+    {
+        // Verify nonce
+        if (!check_ajax_referer("vapt_save_settings_action", "nonce", false)) {
+            wp_send_json_error(["message" => "Invalid Nonce"], 403);
+        }
+
+        if (!current_user_can("manage_options")) {
+            wp_send_json_error(["message" => "Unauthorized"], 403);
+        }
+
+        // Reset
+        $rate_limiter = new VAPT_Rate_Limiter();
+        $rate_limiter->reset_ip_data($rate_limiter->get_current_ip());
+
+        wp_send_json_success([
+            "message" => __(
+                "Rate limit data reset successfully.",
+                "vapt-security",
+            ),
+        ]);
     }
 
     public function handle_save_domain_features()
@@ -2496,15 +2700,15 @@ $vapt_locked_config_sig = '{$signature}';
         }
         $include_settings = !empty($_POST["include_settings"]);
         $settings = $include_settings ? $this->get_config() : [];
-        $custom_plugin_name = sanitize_text_field($_POST['plugin_name'] ?? '');
-        $custom_author_name = sanitize_text_field($_POST['author_name'] ?? '');
+        $custom_plugin_name = sanitize_text_field($_POST["plugin_name"] ?? "");
+        $custom_author_name = sanitize_text_field($_POST["author_name"] ?? "");
 
         $payload = [
             "domain_pattern" => $domain_pattern,
             "settings" => $settings,
             "generated_at" => time(),
             "generated_by" => "superadmin",
-            "version"      => "1.1.0"
+            "version" => "1.1.1",
         ];
         $json_payload = json_encode($payload);
         $salt = "VAPT_LOCKED_CONFIG_INTEGRITY_SALT_v2";
@@ -2621,11 +2825,11 @@ $vapt_locked_config_sig = '{$signature}';
 
             // Extension Check (Exclude compressed files and markdown EXCEPT USER_GUIDE.md)
             $ext = strtolower(pathinfo($relative_path, PATHINFO_EXTENSION));
-            $excluded_extensions = ['zip', 'tar', 'gz', 'rar', '7z'];
+            $excluded_extensions = ["zip", "tar", "gz", "rar", "7z"];
             if (in_array($ext, $excluded_extensions)) {
                 continue;
             }
-            if ($ext === 'md' && $relative_path !== 'USER_GUIDE.md') {
+            if ($ext === "md" && $relative_path !== "USER_GUIDE.md") {
                 continue;
             }
 
@@ -2635,7 +2839,7 @@ $vapt_locked_config_sig = '{$signature}';
             }
 
             // HEADER MODIFICATION FOR vapt-security.php
-            if ($relative_path === 'vapt-security.php') {
+            if ($relative_path === "vapt-security.php") {
                 $content = file_get_contents($file->getRealPath());
 
                 // Replace Plugin Name if provided
@@ -2643,7 +2847,7 @@ $vapt_locked_config_sig = '{$signature}';
                     $content = preg_replace(
                         '/^([ \t]*\*[ \t]*Plugin Name:[ \t]*).*$/m',
                         '$1' . $custom_plugin_name,
-                        $content
+                        $content,
                     );
                 }
 
@@ -2652,50 +2856,53 @@ $vapt_locked_config_sig = '{$signature}';
                     $content = preg_replace(
                         '/^([ \t]*\*[ \t]*Author:[ \t]*).*$/m',
                         '$1' . $custom_author_name,
-                        $content
+                        $content,
                     );
                 }
 
-                // Force Version to 1.0.0
+                // Force Version to 1.1.0
                 $content = preg_replace(
                     '/^([ \t]*\*[ \t]*Version:[ \t]*).*$/m',
-                    '${1}1.0.0',
-                    $content
+                    '${1}1.1.0',
+                    $content,
                 );
 
                 // Force URIs to #
                 $content = preg_replace(
                     '/^([ \t]*\*[ \t]*Plugin URI:[ \t]*).*$/m',
                     '$1#',
-                    $content
+                    $content,
                 );
                 $content = preg_replace(
                     '/^([ \t]*\*[ \t]*Author URI:[ \t]*).*$/m',
                     '$1#',
-                    $content
+                    $content,
                 );
 
                 // Force Requires Headers
                 $content = preg_replace(
                     '/^([ \t]*\*[ \t]*Requires at least:[ \t]*).*$/m',
                     '$16.0',
-                    $content
+                    $content,
                 );
                 $content = preg_replace(
                     '/^([ \t]*\*[ \t]*Requires PHP:[ \t]*).*$/m',
                     '$18.0',
-                    $content
+                    $content,
                 );
 
                 $content = preg_replace(
                     '/define\(\"VAPT_VERSION\",\s*\".*?\"\);/',
-                    'define("VAPT_VERSION", "1.0.0");',
-                    $content
+                    'define("VAPT_VERSION", "1.1.0");',
+                    $content,
                 );
 
                 $zip->addFromString($folder . "/" . $relative_path, $content);
             } else {
-                $zip->addFile($file->getRealPath(), $folder . "/" . $relative_path);
+                $zip->addFile(
+                    $file->getRealPath(),
+                    $folder . "/" . $relative_path,
+                );
             }
         }
 
@@ -2928,7 +3135,7 @@ $vapt_locked_config_sig = '{$signature}';
                 "<h1>Security Violation</h1><p>This build of <strong>VAPT Security</strong> is locked to the domain pattern: <code>%s</code>.</p><p>You are attempting to use it on: <code>%s</code>.</p><p>Please contact the developer at <strong>%s</strong> to obtain a license for this domain.</p>",
                 esc_html($pattern),
                 esc_html($current_host),
-                self::_vapt_reveal("Z25hem55dng3ODZAdHpudnkucGJ6")
+                self::_vapt_reveal("Z25hem55dng3ODZAdHpudnkucGJ6"),
             );
 
             wp_die($msg, "Domain Lock Violation", ["response" => 403]);
@@ -3106,7 +3313,7 @@ $vapt_locked_config_sig = '{$signature}';
     /**
      * Internal helper to reveal obfuscated strings.
      * Prevents simple string-based analysis from finding credentials.
-     * 
+     *
      * @param string $s Obfuscated input.
      * @return string Revealed identifier.
      */

@@ -14,6 +14,7 @@ class VAPT_Rate_Limiter
 {
 
     const OPTION_KEY          = 'vapt_rate_limit';
+
     const CRON_OPTION_KEY     = 'vapt_cron_rate_limit';
     const BLOCKED_IPS_KEY     = 'vapt_blocked_ips';
     const WINDOW_MINUTES      = 1;          // 1 minute
@@ -23,6 +24,7 @@ class VAPT_Rate_Limiter
 
     private $data = [];
     private $cron_data = [];
+    private $lock_handle;
 
     public function __construct()
     {
@@ -52,7 +54,7 @@ class VAPT_Rate_Limiter
         }
 
         // Get settings
-        $options = get_option('vapt_security_options', []);
+        $options = VAPT_Security::instance()->get_config();
         $window_minutes = isset($options['rate_limit_window']) ? absint($options['rate_limit_window']) : self::WINDOW_MINUTES;
         $max_requests = isset($options['rate_limit_max']) ? absint($options['rate_limit_max']) : self::MAX_REQUESTS_PER_MIN;
 
@@ -79,34 +81,81 @@ class VAPT_Rate_Limiter
      */
     public function allow_cron_request(): bool
     {
+        $upload_dir = wp_upload_dir();
+        $data_file = $upload_dir['basedir'] . '/vapt_cron_data.json';
+
+
+        // Use c+ to open for read/write and create if doesn't exist.
+        // This is atomic and avoids race conditions between file_exists and fopen.
+        // Using retry mechanism for Windows concurrency.
+        $fp = $this->open_with_retry($data_file, 'c+');
+        if (!$fp) {
+            error_log("VAPT Security: FAILED to open cron data file after retries: $data_file");
+            return true; // Fallback
+        }
+
+        // Exclusive Lock
+        if (!flock($fp, LOCK_EX)) {
+            error_log("VAPT Security: FAILED to acquire exclusive lock on cron data file.");
+            fclose($fp);
+            return true;
+        }
+
+        // Read Data
+        $content = '';
+        while (!feof($fp)) {
+            $content .= fread($fp, 8192);
+        }
+        $cron_data = json_decode($content, true);
+        if (!is_array($cron_data)) {
+            $cron_data = [];
+        }
+
         $ip   = $this->get_current_ip();
         $now  = time();
 
-        if (! isset($this->cron_data[$ip])) {
-            $this->cron_data[$ip] = [];
+        if (!isset($cron_data[$ip])) {
+            $cron_data[$ip] = [];
         }
 
         // Get settings
-        $options = get_option('vapt_security_options', []);
+        $options = VAPT_Security::instance()->get_config();
         $max_cron_requests = isset($options['cron_rate_limit']) ? absint($options['cron_rate_limit']) : self::MAX_CRON_REQUESTS_PER_HOUR;
 
+
         // Keep only timestamps within the window (1 hour)
-        $this->cron_data[$ip] = array_filter(
-            $this->cron_data[$ip],
+        $cron_data[$ip] = array_filter(
+            $cron_data[$ip],
             fn($ts) => ($now - $ts) <= self::CRON_WINDOW_HOURS * 3600
         );
 
+        // Re-index array to prevent JSON becoming an object with numeric keys
+        $cron_data[$ip] = array_values($cron_data[$ip]);
+
+        $allowed = true;
         // Check if limit exceeded
-        if (count($this->cron_data[$ip]) >= $max_cron_requests) {
+        if (count($cron_data[$ip]) >= $max_cron_requests) {
+            $allowed = false;
             // Block IP
             $this->block_ip($ip);
-            return false;
+        } else {
+            $cron_data[$ip][] = $now;
         }
 
-        $this->cron_data[$ip][] = $now;
-        $this->save_cron_data();
-        return true;
+        // Save back to file
+        rewind($fp); // Ensure pointer is at start for ftruncate on some systems
+        ftruncate($fp, 0);
+        rewind($fp); // Ensure pointer is at start for fwrite
+        fwrite($fp, json_encode($cron_data));
+        fflush($fp);
+
+        flock($fp, LOCK_UN);
+        fclose($fp);
+
+        return $allowed;
     }
+
+
 
     /**
      * Clean old entries
@@ -115,7 +164,6 @@ class VAPT_Rate_Limiter
     {
         $now = time();
         $changed = false;
-        $cron_changed = false;
 
         // Clean regular rate limit data
         foreach ($this->data as $ip => $timestamps) {
@@ -129,24 +177,48 @@ class VAPT_Rate_Limiter
             }
         }
 
-        // Clean cron rate limit data
-        foreach ($this->cron_data as $ip => $timestamps) {
-            $new = array_filter(
-                $timestamps,
-                fn($ts) => ($now - $ts) <= self::CRON_WINDOW_HOURS * 3600
-            );
-            if (count($new) !== count($timestamps)) {
-                $cron_changed = true;
-                $this->cron_data[$ip] = $new;
-            }
-        }
-
         if ($changed) {
             $this->save();
         }
 
-        if ($cron_changed) {
-            $this->save_cron_data();
+        // Clean cron rate limit data (File based)
+        $upload_dir = wp_upload_dir();
+        $data_file = $upload_dir['basedir'] . '/vapt_cron_data.json';
+        if (file_exists($data_file)) {
+            $fp = $this->open_with_retry($data_file, 'r+');
+            if ($fp && flock($fp, LOCK_EX)) {
+                $content = '';
+                while (!feof($fp)) {
+                    $chunk = fread($fp, 8192);
+                    if ($chunk === false) break;
+                    $content .= $chunk;
+                }
+                $cron_data = json_decode($content, true);
+
+                if (is_array($cron_data)) {
+                    $file_changed = false;
+                    foreach ($cron_data as $ip => $timestamps) {
+                        $new = array_filter(
+                            $timestamps,
+                            fn($ts) => ($now - $ts) <= self::CRON_WINDOW_HOURS * 3600
+                        );
+                        if (count($new) !== count($timestamps)) {
+                            $file_changed = true;
+                            $cron_data[$ip] = $new;
+                        }
+                    }
+
+                    if ($file_changed) {
+                        ftruncate($fp, 0);
+                        rewind($fp);
+                        fwrite($fp, json_encode($cron_data));
+                        fflush($fp);
+                    }
+                }
+
+                flock($fp, LOCK_UN);
+                fclose($fp);
+            }
         }
     }
 
@@ -224,21 +296,35 @@ class VAPT_Rate_Limiter
     }
 
     /**
-     * Save cron rate limit data
-     */
-    private function save_cron_data()
-    {
-        update_option(self::CRON_OPTION_KEY, wp_json_encode($this->cron_data), false);
-    }
-
-    /**
      * Get rate limit statistics
      */
     public function get_stats()
     {
+        // Get Cron Data from file
+        $cron_data = [];
+        $upload_dir = wp_upload_dir();
+        $data_file = $upload_dir['basedir'] . '/vapt_cron_data.json';
+        if (file_exists($data_file)) {
+            $fp = $this->open_with_retry($data_file, 'r');
+            if ($fp && flock($fp, LOCK_SH)) { // Shared lock for reading
+                $content = '';
+                while (!feof($fp)) {
+                    $chunk = fread($fp, 8192);
+                    if ($chunk === false) break;
+                    $content .= $chunk;
+                }
+                $cron_data = json_decode($content, true);
+                flock($fp, LOCK_UN);
+                fclose($fp);
+            }
+        }
+        if (!is_array($cron_data)) {
+            $cron_data = [];
+        }
+
         return [
             'regular_requests' => $this->data,
-            'cron_requests' => $this->cron_data
+            'cron_requests' => $cron_data
         ];
     }
 
@@ -252,23 +338,53 @@ class VAPT_Rate_Limiter
             $this->save();
         }
 
-        if (isset($this->cron_data[$ip])) {
-            unset($this->cron_data[$ip]);
-            $this->save_cron_data();
-        }
+        // Reset Cron (File based)
+        $upload_dir = wp_upload_dir();
+        $data_file = $upload_dir['basedir'] . '/vapt_cron_data.json';
+        if (file_exists($data_file)) {
+            $fp = $this->open_with_retry($data_file, 'r+');
+            if ($fp && flock($fp, LOCK_EX)) {
+                $content = '';
+                while (!feof($fp)) {
+                    $chunk = fread($fp, 8192);
+                    if ($chunk === false) break;
+                    $content .= $chunk;
+                }
+                $cron_data = json_decode($content, true);
 
-        // Remove from violations
-        $violations = get_option('vapt_ip_violations', []);
-        if (isset($violations[$ip])) {
-            unset($violations[$ip]);
-            update_option('vapt_ip_violations', $violations, false);
-        }
+                if (is_array($cron_data) && isset($cron_data[$ip])) {
+                    unset($cron_data[$ip]);
+                    ftruncate($fp, 0);
+                    rewind($fp);
+                    fwrite($fp, json_encode($cron_data));
+                    fflush($fp);
+                }
 
-        // Remove from blocked IPs
-        $blocked_ips = get_option(self::BLOCKED_IPS_KEY, []);
-        if (isset($blocked_ips[$ip])) {
-            unset($blocked_ips[$ip]);
-            update_option(self::BLOCKED_IPS_KEY, $blocked_ips, false);
+                flock($fp, LOCK_UN);
+                fclose($fp);
+            }
         }
+    }
+    /**
+     * Helper to open file with retry logic to handle Windows file locking concurrency.
+     *
+     * @param string $file Path to file.
+     * @param string $mode Mode for fopen.
+     * @param int $max_retries Number of times to retry.
+     * @return resource|false File pointer or false on failure.
+     */
+    private function open_with_retry($file, $mode, $max_retries = 50)
+    {
+        $fp = false;
+        for ($i = 0; $i < $max_retries; $i++) {
+            // Suppress warnings because fopen failure on locked file is expected
+            $fp = @fopen($file, $mode);
+            if ($fp) {
+                return $fp;
+            }
+            // Sleep for random time between 50ms and 150ms to reduce contention
+            usleep(rand(50000, 150000));
+        }
+        return false;
     }
 }
