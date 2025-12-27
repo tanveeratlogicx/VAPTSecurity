@@ -1,0 +1,25 @@
+Step 1: 
+-------
+Create a WordPress Plugin, to fix the VAPT issues especially the one's being listed below: 
+1. DOS Attack via wp-cron.php,
+2. Lack of Input Validation and
+3. Rate Limiting on Form Submission 
+
+While actually implementing the plugin, please ensure that it follows best practices for security and performance optimization, besides taking into account the following Recommendations: 
+1. Restrict access to wp-cron.php by implementing rate limiting or server-level access rules. Consider disabling WP-Cron and configuring a system-level cron job instead. Ensure plugins using scheduled tasks are secured and do not expose sensitive operations. 
+2. Implement strict server-side input validation and sanitization for all user-controlled fields. Enforce allow lists, expected formats, and length restrictions. Use established validation libraries and ensure that validation logic cannot be bypassed. 
+3. Implement server-side rate limiting, CAPTCHA, or request throttling for all form endpoints. Monitor abnormal submission patterns and block IPs exhibiting suspicious activity. Ensure form processing logic gracefully handles high-volume traffic. 
+
+The generated code should be secure, efficient, and well-documented. It should also be compatible with the latest WordPress version and adhere to the WordPress coding standards. Please provide a detailed explanation of how you would implement the plugin, ensuring that the code is thoroughly tested and documented for deployment, and that it follows best practices for security and performance optimization. 
+
+Create a Configuration file to enable/disable the VAPT features, and would like to see additional configuration for the things like info and display of a test URL for any specific feature added.
+
+Do incremet the Version info on each change.
+
+
+Step 2
+The source files are hosted on a Github repository e.g. https://github.com/tanveeratlogicx/vapt-security
+The plugin should be named as "VAPT Security".
+
+I would like to use a configuration file, hosted on a Github Gist, to push certain features to the application once its domain gets verified. If the Verification fails, the application should work only the basic feature like `Form Input Validation and Sanitation` - Implement an Authentication for each domain?
+
