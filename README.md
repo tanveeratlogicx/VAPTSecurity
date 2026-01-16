@@ -16,3 +16,4 @@ While actually implementing the plugin, please ensure that it follows best pract
 # Outdated and Vulnerable WordPress Plugins
 **Recommendation:** Review all installed WordPress plugins and ensure each is updated to the latest stable version. Remove unused or unmaintained plugins immediately. Enable automatic updates and periodically audit plugin integrity and version history.
 
+Special Access URL wp-admin/admin.php?page=vapt-security
